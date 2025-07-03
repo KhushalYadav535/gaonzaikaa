@@ -26,7 +26,7 @@ const Contact = () => {
   };
 
   const openWhatsApp = () => {
-    window.open('https://wa.me/919876543210?text=Hello, I would like to know more about Gaon Zaika.', '_blank');
+    window.open('https://wa.me/918182838680?text=Hello, I would like to know more about Gaon Zaika.', '_blank');
   };
 
   return (
@@ -54,7 +54,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold text-amber-800 mb-1">Address</h4>
-                    <p className="text-amber-600">Gaon Zaika Restaurant<br />123, Main Market, Sector 15<br />Gurgaon, Haryana - 122001</p>
+                    <p className="text-amber-600">Gaon Zaika Restaurant<br />Janghai<br />Prayagraj, Uttar Pradesh</p>
                   </div>
                 </div>
 
@@ -64,8 +64,8 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold text-amber-800 mb-1">Phone</h4>
-                    <p className="text-amber-600">+91 98765 43210</p>
-                    <p className="text-amber-600">+91 87654 32109</p>
+                    <p className="text-amber-600">+91 81828 38680</p>
+                    <p className="text-amber-600">+91 90057 54137</p>
                   </div>
                 </div>
 

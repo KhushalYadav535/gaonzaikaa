@@ -41,7 +41,7 @@ const About = () => {
           <div>
             <h3 className="text-3xl font-bold text-amber-800 mb-6">Our Story</h3>
             <p className="text-amber-700 text-lg leading-relaxed mb-6">
-              In 2018, Ramesh ji decided to bring his village memories to life in the city. With his wife Sunita ji's magical cooking skills and traditional recipe knowledge, Gaon Zaika was born.
+              In 2018, Ramesh ji decided to bring his village memories to life in the city. With his wife's magical cooking skills and traditional recipe knowledge, Gaon Zaika was born.
             </p>
             <p className="text-amber-700 text-lg leading-relaxed mb-6">
               Today we have over 15 skilled chefs, all coming from villages to showcase their culinary expertise in the city. Every dish carries the love of a mother and the fragrance of village soil.
@@ -53,7 +53,7 @@ const About = () => {
                 className="h-16 w-16 rounded-full object-cover border-4 border-orange-200 mr-4"
               />
               <div>
-                <p className="font-semibold text-amber-800">Ramesh & Sunita Gupta</p>
+                <p className="font-semibold text-amber-800"></p>
                 <p className="text-amber-600">Founders</p>
               </div>
             </div>
