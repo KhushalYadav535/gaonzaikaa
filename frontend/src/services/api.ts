@@ -1,9 +1,10 @@
 import axios from 'axios';
+import config from '../config/environment';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: '/api', // This will be proxied to the backend during development
-  timeout: 10000,
+  baseURL: config.api.baseURL,
+  timeout: config.api.timeout,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -169,4 +170,4 @@ export const deliveryAPI = {
     api.patch(`/delivery/orders/${orderId}/status`, { status }),
 };
 
-export default api; 
+export default api;
