@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { adminUsers } from '../../mock/data';
+// import { adminUsers } from '../../mock/data'; // Remove this line
 
 interface AdminSessionContextType {
   isLoggedIn: boolean;
   adminName: string;
   adminRole: string;
-  login: (username: string) => void;
+  login: (name: string, role: string) => void;
   logout: () => void;
   setRole: (role: string) => void;
 }
@@ -27,12 +27,11 @@ export const AdminSessionProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const login = (username: string) => {
+  const login = (name: string, role: string) => {
     setIsLoggedIn(true);
-    setAdminName(username);
-    const user = adminUsers.find(u => u.name.toLowerCase() === username.toLowerCase());
-    setAdminRole(user?.role || 'super_admin');
-    localStorage.setItem('adminSession', JSON.stringify({ isLoggedIn: true, adminName: username, adminRole: user?.role || 'super_admin' }));
+    setAdminName(name);
+    setAdminRole(role || 'super_admin');
+    localStorage.setItem('adminSession', JSON.stringify({ isLoggedIn: true, adminName: name, adminRole: role || 'super_admin' }));
   };
 
   const logout = () => {

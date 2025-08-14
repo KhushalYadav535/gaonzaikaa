@@ -19,17 +19,37 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    console.log('Attempting login with:', { email, password });
+    
     try {
+      console.log('Making API call to admin login...');
       const response = await adminAPI.login({ email, password });
+      console.log('API response received:', response);
+      console.log('Response data structure:', JSON.stringify(response.data, null, 2));
+      
       if (response.data.success) {
-        // Store admin info in session
-        login(email);
+        console.log('Login successful, response data:', response.data);
+        console.log('Response.data.data:', response.data.data);
+        // Use backend's returned name and role
+        const { name, role } = response.data.data;
+        console.log('Extracted name:', name, 'role:', role);
+        login(name, role);
         navigate('/admin');
       } else {
+        console.log('Login failed, response:', response.data);
         setError(response.data.message || 'Login failed');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      console.error('Error response:', err.response);
+      console.error('Error message:', err.message);
+      
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        'Login failed. Please try again.'
+      );
     }
   };
 
