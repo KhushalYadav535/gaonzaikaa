@@ -4,7 +4,7 @@ export const config = {
   api: {
     // Use relative '/api' by default so Vercel can proxy to backend and avoid CORS
     baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-    timeout: 10000,
+    timeout: 30000,
   },
   
   // App Configuration

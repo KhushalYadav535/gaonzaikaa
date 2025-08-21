@@ -39,11 +39,24 @@ api.interceptors.response.use(
   }
 );
 
+// Helper: retry once on network errors (Render cold start)
+async function retryOnceOnNetworkError<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    if (err.code === 'ERR_NETWORK') {
+      await new Promise(r => setTimeout(r, 1500));
+      return await fn();
+    }
+    throw err;
+  }
+}
+
 // Admin API endpoints
 export const adminAPI = {
   // Login
   login: (credentials: { email: string; password: string }) =>
-    api.post('/admin/login', credentials),
+    retryOnceOnNetworkError(() => api.post('/admin/login', credentials)),
 
   // Dashboard
   getDashboard: () => api.get('/admin/dashboard'),
