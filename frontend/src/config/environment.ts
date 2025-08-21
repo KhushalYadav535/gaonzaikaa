@@ -2,11 +2,8 @@
 export const config = {
   // API Configuration
   api: {
-    baseURL: import.meta.env.VITE_API_BASE_URL || 
-      (import.meta.env.DEV 
-        ? '/api' // Development - proxied to localhost:3000
-        : 'https://gaon-zaika.onrender.com/api' // Production
-      ),
+    // Use relative '/api' by default so Vercel can proxy to backend and avoid CORS
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
     timeout: 10000,
   },
   
