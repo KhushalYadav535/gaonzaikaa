@@ -56,7 +56,8 @@ async function retryOnceOnNetworkError<T>(fn: () => Promise<T>): Promise<T> {
 export const adminAPI = {
   // Login
   login: (credentials: { email: string; password: string }) =>
-    retryOnceOnNetworkError(() => api.post('/admin/login', credentials)),
+    // Backend expects admin auth under /auth/admin/login
+    retryOnceOnNetworkError(() => api.post('/auth/admin/login', credentials)),
 
   // Dashboard
   getDashboard: () => api.get('/admin/dashboard'),
