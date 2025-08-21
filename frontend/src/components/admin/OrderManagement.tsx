@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Toast from './Toast';
-import { FaSearch, FaUser, FaStore, FaInfoCircle, FaListUl, FaTruck, FaCheckCircle, FaClock, FaUtensils } from 'react-icons/fa';
+import { FaSearch, FaUser, FaStore, FaInfoCircle, FaListUl, FaTruck, FaCheckCircle, FaClock, FaUtensils, FaTrash, FaTimes } from 'react-icons/fa';
 import { adminAPI } from '../../services/api';
+import { useAdminSession } from './AdminSessionContext';
 
 interface Order {
   _id: string;
@@ -35,6 +36,17 @@ const OrderManagement: React.FC = () => {
   // Details modal state
   const [showDetails, setShowDetails] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
+  // Delete modal state
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteOrder, setDeleteOrder] = useState<Order | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { adminRole, isLoggedIn } = useAdminSession();
+  const isAdmin = isLoggedIn && (
+    adminRole === 'super_admin' ||
+    adminRole === 'admin' ||
+    adminRole === 'restaurant_manager' ||
+    adminRole === 'delivery_manager'
+  );
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -95,6 +107,34 @@ const OrderManagement: React.FC = () => {
   const closeDetails = () => {
     setShowDetails(false);
     setDetailsOrder(null);
+  };
+
+  // Delete handlers
+  const openDelete = (order: Order) => {
+    setDeleteOrder(order);
+    setShowDelete(true);
+  };
+  const closeDelete = () => {
+    setShowDelete(false);
+    setDeleteOrder(null);
+  };
+  const confirmDelete = async () => {
+    if (!deleteOrder) return;
+    setDeleting(true);
+    try {
+      const response = await adminAPI.deleteOrder(deleteOrder._id);
+      if (response.data.success) {
+        setOrders(prev => prev.filter(o => o._id !== deleteOrder._id));
+        showToast('Order deleted successfully.');
+        closeDelete();
+      } else {
+        showToast(response.data.message || 'Failed to delete order.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to delete order.', 'error');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   // deliveryStaff would be fetched from backend in a real app
@@ -172,6 +212,15 @@ const OrderManagement: React.FC = () => {
                     <option value="delivered">Delivered</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
+                  {isAdmin && (
+                    <button
+                      className="bg-red-500 text-white px-2 py-1 rounded transition hover:bg-red-600 active:scale-95 flex items-center gap-1"
+                      onClick={() => openDelete(order)}
+                      title="Delete order"
+                    >
+                      <FaTrash /> Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -222,6 +271,37 @@ const OrderManagement: React.FC = () => {
             {/* Order Amount */}
             <div className="mb-4">
               <div className="font-semibold">Total Amount: ₹{detailsOrder.totalAmount}</div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {showDelete && deleteOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative animate-fadeIn">
+            <button className="absolute top-2 right-2 text-2xl" onClick={closeDelete}>&times;</button>
+            <h3 className="text-2xl font-bold mb-4 flex items-center gap-2 text-red-700"><FaTrash /> Confirm Delete</h3>
+            <p className="mb-4">Are you sure you want to delete order <strong>{deleteOrder.orderId}</strong> for <strong>{deleteOrder.customerInfo.name}</strong>?</p>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <FaTrash />
+                )}
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+              <button
+                onClick={closeDelete}
+                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 flex items-center justify-center gap-2"
+              >
+                <FaTimes />
+                Cancel
+              </button>
             </div>
           </div>
         </div>

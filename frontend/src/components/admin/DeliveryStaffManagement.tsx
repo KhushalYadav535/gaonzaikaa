@@ -68,6 +68,7 @@ const DeliveryStaffManagement: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastType>(null);
   const [view, setView] = useState<'table' | 'card'>('table');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Modal state
   const [showAdd, setShowAdd] = useState(false);
@@ -86,19 +87,29 @@ const DeliveryStaffManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('Fetching delivery staff...');
       const response = await adminAPI.getUsers({ role: 'delivery', limit: 100 });
-      if (response.data.success) {
+      console.log('Fetch staff response:', response);
+      
+      if (response.data && response.data.success) {
         // Map vehicleDetails.number to vehicleNumber for each staff
         const staffList = (response.data.data || []).map((st: any) => ({
           ...st,
           vehicleNumber: st.vehicleDetails?.number || '',
         }));
+        console.log('Processed staff list:', staffList);
         setStaff(staffList);
       } else {
-        setError('Failed to load delivery staff.');
+        const errorMsg = response.data?.message || 'Failed to load delivery staff.';
+        console.error('Fetch staff failed:', errorMsg);
+        setError(errorMsg);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load delivery staff.');
+      console.error('Fetch staff error:', err);
+      const errorMsg = err.response?.data?.message || 
+                      err.message || 
+                      'Failed to load delivery staff.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -107,6 +118,74 @@ const DeliveryStaffManagement: React.FC = () => {
   useEffect(() => {
     fetchStaff();
   }, []);
+
+  // Debug function to test API connectivity
+  const testAPIConnection = async () => {
+    try {
+      console.log('Testing API connection...');
+      const response = await adminAPI.getUsers({ role: 'delivery', limit: 1 });
+      console.log('API connection test successful:', response);
+      showToast('API connection working', 'success');
+    } catch (error) {
+      console.error('API connection test failed:', error);
+      showToast('API connection failed', 'error');
+    }
+  };
+
+  // Debug function to test delete endpoint
+  const testDeleteEndpoint = async () => {
+    try {
+      if (staff.length === 0) {
+        showToast('No staff available to test delete', 'error');
+        return;
+      }
+      
+      const testStaff = staff[0];
+      console.log('Testing delete endpoint with staff:', testStaff);
+      
+      // Test the delete request without actually deleting
+      const response = await adminAPI.deleteUser(testStaff._id, 'delivery');
+      console.log('Delete endpoint test successful:', response);
+      showToast('Delete endpoint working', 'success');
+    } catch (error: any) {
+      console.error('Delete endpoint test failed:', error);
+      if (error.response) {
+        showToast(`Delete endpoint error: ${error.response.status} - ${error.response.data?.message || 'Unknown error'}`, 'error');
+      } else {
+        showToast('Delete endpoint test failed', 'error');
+      }
+    }
+  };
+
+  // Test different possible delete endpoints
+  const testAllDeleteEndpoints = async () => {
+    if (staff.length === 0) {
+      showToast('No staff available to test', 'error');
+      return;
+    }
+    
+    const testStaff = staff[0];
+    console.log('Testing all possible delete endpoints with staff:', testStaff);
+    
+    const endpoints = [
+      { name: 'DELETE /admin/users/:id', test: () => adminAPI.deleteUser(testStaff._id, 'delivery') },
+      { name: 'POST /admin/users/:id/delete', test: () => adminAPI.deleteUserPost(testStaff._id, 'delivery') }
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Testing endpoint: ${endpoint.name}`);
+        const response = await endpoint.test();
+        console.log(`${endpoint.name} - Success:`, response);
+        showToast(`${endpoint.name} working!`, 'success');
+        return;
+      } catch (error: any) {
+        console.log(`${endpoint.name} - Failed:`, error.response?.status, error.response?.data);
+      }
+    }
+    
+    showToast('All delete endpoints failed', 'error');
+  };
 
   // Toast helper
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -185,18 +264,90 @@ const DeliveryStaffManagement: React.FC = () => {
   const cancelDelete = () => setDeleteId(null);
   const handleDelete = async () => {
     if (!deleteId) return;
+    
+    // Validate that the staff member exists
+    const staffToDelete = staff.find(s => s._id === deleteId);
+    if (!staffToDelete) {
+      showToast('Staff member not found', 'error');
+      setDeleteId(null);
+      return;
+    }
+    
     setDeleteLoading(true);
     try {
-      const res = await adminAPI.deleteUser(deleteId, 'delivery');
-      if (res.data.success) {
-        showToast('Staff deleted successfully');
+      console.log('Attempting to delete staff with ID:', deleteId);
+      console.log('Staff details:', staffToDelete);
+      
+      // Try the main delete method first
+      let res;
+      try {
+        res = await adminAPI.deleteUser(deleteId, 'delivery');
+        console.log('Delete API response:', res);
+      } catch (deleteError: any) {
+        console.log('Main delete method failed, trying fallback:', deleteError);
+        
+        // If DELETE method fails with server error, try POST method
+        if (deleteError.response?.status === 500) {
+          console.log('Trying fallback POST delete method...');
+          res = await adminAPI.deleteUserPost(deleteId, 'delivery');
+          console.log('Fallback delete API response:', res);
+        } else {
+          throw deleteError; // Re-throw if it's not a server error
+        }
+      }
+      
+      if (res.data && res.data.success) {
+        const successMsg = `Successfully deleted ${staffToDelete.name}`;
+        showToast(successMsg);
+        setSuccessMessage(successMsg);
         setDeleteId(null);
-        fetchStaff();
+        // Remove the deleted staff from local state immediately
+        setStaff(prevStaff => prevStaff.filter(st => st._id !== deleteId));
+        // Also refresh from server to ensure consistency
+        await fetchStaff();
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        showToast(res.data.message || 'Failed to delete staff', 'error');
+        const errorMessage = res.data?.message || 'Failed to delete staff';
+        console.error('Delete failed:', errorMessage);
+        showToast(errorMessage, 'error');
       }
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to delete staff', 'error');
+      console.error('Delete error:', err);
+      console.error('Error response:', err.response);
+      console.error('Error status:', err.response?.status);
+      console.error('Error data:', err.response?.data);
+      console.error('Error headers:', err.response?.headers);
+      
+      let errorMessage = 'Failed to delete staff. Please try again.';
+      
+      if (err.response) {
+        // Server responded with error status
+        if (err.response.status === 404) {
+          errorMessage = 'Staff member not found on server.';
+        } else if (err.response.status === 403) {
+          errorMessage = 'You do not have permission to delete staff members.';
+        } else if (err.response.status === 500) {
+          errorMessage = `Server error occurred (${err.response.status}). Please try again later.`;
+          console.error('Server error details:', err.response.data);
+        } else if (err.response.status === 400) {
+          errorMessage = `Bad request: ${err.response.data?.message || 'Invalid data sent to server'}`;
+        } else if (err.response.data?.message) {
+          errorMessage = err.response.data.message;
+        } else {
+          errorMessage = `Server error (${err.response.status}): ${err.response.statusText}`;
+        }
+      } else if (err.request) {
+        // Network error
+        errorMessage = 'Network error. Please check your internet connection.';
+        console.error('Network error details:', err.request);
+      } else if (err.message) {
+        // Other error
+        errorMessage = err.message;
+      }
+      
+      showToast(errorMessage, 'error');
     } finally {
       setDeleteLoading(false);
     }
@@ -220,6 +371,15 @@ const DeliveryStaffManagement: React.FC = () => {
   return (
     <div className="p-8">
       <h2 className="text-3xl font-bold mb-6 flex items-center gap-3 text-amber-900"><FaUserTie /> Delivery Staff Management</h2>
+      
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-center gap-2">
+          <FaCheckCircle className="text-green-500" />
+          {successMessage}
+        </div>
+      )}
+      
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
         <div className="flex-1 relative">
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -246,6 +406,15 @@ const DeliveryStaffManagement: React.FC = () => {
       <div className="flex items-center justify-between mb-4">
         <button onClick={openAdd} className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded shadow font-semibold"><FaPlus /> Add Staff</button>
         <div className="flex gap-2">
+          <button 
+            onClick={testAPIConnection} 
+            className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm"
+            title="Test API Connection"
+          >
+            Test API
+          </button>
+          <button onClick={testDeleteEndpoint} className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm" title="Test Delete Endpoint">Test Delete</button>
+          <button onClick={testAllDeleteEndpoints} className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded text-sm" title="Test All Delete Endpoints">Test All Delete</button>
           <button onClick={() => setView('table')} className={`p-2 rounded ${view === 'table' ? 'bg-orange-200 text-orange-800' : 'bg-gray-100 text-gray-500'} transition`} title="Table View"><FaThList /></button>
           <button onClick={() => setView('card')} className={`p-2 rounded ${view === 'card' ? 'bg-orange-200 text-orange-800' : 'bg-gray-100 text-gray-500'} transition`} title="Card View"><FaThLarge /></button>
         </div>
@@ -346,7 +515,22 @@ const DeliveryStaffManagement: React.FC = () => {
                     </td>
                     <td className="py-2 px-4 border-b flex gap-2">
                       <button onClick={() => openEdit(st)} className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full flex items-center justify-center" title="Edit"><FaEdit /></button>
-                      <button onClick={() => confirmDelete(st._id)} className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full flex items-center justify-center" title="Delete"><FaTrash /></button>
+                      <button 
+                        onClick={() => confirmDelete(st._id)} 
+                        disabled={deleteLoading && deleteId === st._id}
+                        className={`p-2 rounded-full flex items-center justify-center transition-all ${
+                          deleteLoading && deleteId === st._id 
+                            ? 'bg-gray-400 cursor-not-allowed opacity-50' 
+                            : 'bg-red-500 hover:bg-red-600 text-white hover:scale-105'
+                        }`} 
+                        title={deleteLoading && deleteId === st._id ? 'Deleting...' : 'Delete'}
+                      >
+                        {deleteLoading && deleteId === st._id ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <FaTrash />
+                        )}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -396,10 +580,41 @@ const DeliveryStaffManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm relative animate-fadeIn">
             <h3 className="text-xl font-bold mb-4 text-red-700 flex items-center gap-2"><FaTrash /> Confirm Delete</h3>
-            <p className="mb-6">Are you sure you want to delete this staff member?</p>
+            <p className="mb-6">
+              Are you sure you want to delete{' '}
+              <span className="font-semibold text-orange-600">
+                {staff.find(s => s._id === deleteId)?.name || 'this staff member'}?
+              </span>
+            </p>
+            <p className="text-sm text-gray-600 mb-6">
+              This action cannot be undone and will remove all associated data.
+            </p>
             <div className="flex gap-4">
-              <button onClick={handleDelete} disabled={deleteLoading} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold w-full">{deleteLoading ? 'Deleting...' : 'Delete'}</button>
-              <button onClick={cancelDelete} className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-semibold w-full">Cancel</button>
+              <button 
+                onClick={handleDelete} 
+                disabled={deleteLoading} 
+                className={`px-4 py-2 rounded font-semibold w-full transition-all ${
+                  deleteLoading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-red-500 hover:bg-red-600 text-white'
+                }`}
+              >
+                {deleteLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Deleting...
+                  </span>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+              <button 
+                onClick={cancelDelete} 
+                disabled={deleteLoading}
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded font-semibold w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

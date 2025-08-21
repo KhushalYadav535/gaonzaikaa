@@ -23,6 +23,16 @@ export default defineConfig({
             console.log('proxy error', err);
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Rewrite Origin header to avoid backend CORS rejection in dev
+            try {
+              const currentOrigin = proxyReq.getHeader('origin');
+              if (currentOrigin) {
+                // Set origin to backend target so server-side CORS allows it
+                proxyReq.setHeader('origin', 'http://localhost:3000');
+              }
+            } catch (e) {
+              // noop
+            }
             console.log('Sending Request to the Target:', req.method, req.url);
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {

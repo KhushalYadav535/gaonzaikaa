@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { restaurantApplications as mockApplications } from '../../mock/data';
 import { FaUtensils, FaUser, FaPhone, FaMapMarkerAlt, FaCheckCircle, FaTimesCircle, FaClipboardCheck, FaUserCircle, FaThList, FaThLarge, FaSearch } from 'react-icons/fa';
 
@@ -47,8 +47,17 @@ const AppRowSkeleton = () => (
   </tr>
 );
 
+const STORAGE_KEY = 'restaurant_onboarding_apps';
+
 const RestaurantOnboarding: React.FC = () => {
-  const [applications, setApplications] = useState(mockApplications);
+  const [applications, setApplications] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : mockApplications;
+    } catch (_e) {
+      return mockApplications;
+    }
+  });
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' } | null>(null);
   const [view, setView] = useState<'table' | 'card'>('table');
   const [search, setSearch] = useState('');
@@ -59,6 +68,15 @@ const RestaurantOnboarding: React.FC = () => {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
   };
+
+  // Persist applications to localStorage so status survives refresh
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(applications));
+    } catch (_e) {
+      // ignore storage errors
+    }
+  }, [applications]);
 
   const handleApprove = (id: number) => {
     setApplications(apps => apps.map(app => app.id === id ? { ...app, status: 'approved' } : app));

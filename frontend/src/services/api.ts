@@ -72,8 +72,48 @@ export const adminAPI = {
     api.get('/admin/users', { params }),
   updateUser: (id: string, data: any) =>
     api.put(`/admin/users/${id}`, data),
-  deleteUser: (id: string, role: string) =>
-    api.delete(`/admin/users/${id}`, { data: { role } }),
+  deleteUser: (id: string, role: string) => {
+    console.log(`Deleting user with ID: ${id}, role: ${role}`);
+    
+    // Try different request formats to see which one works
+    const requestConfig = {
+      method: 'DELETE',
+      url: `/admin/users/${id}`,
+      data: { role },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      validateStatus: (status: number) => {
+        // Log all responses for debugging
+        console.log(`Delete request status: ${status}`);
+        return status < 500; // Don't throw on server errors, let us handle them
+      }
+    };
+    
+    console.log('Delete request config:', requestConfig);
+    
+    return api.delete(`/admin/users/${id}`, { 
+      data: { role },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      validateStatus: (status: number) => {
+        console.log(`Delete request status: ${status}`);
+        return status < 500;
+      }
+    });
+  },
+  
+  // Fallback delete method using POST
+  deleteUserPost: (id: string, role: string) => {
+    console.log(`Deleting user with ID: ${id}, role: ${role} using POST method`);
+    return api.post(`/admin/users/${id}/delete`, { 
+      role,
+      action: 'delete'
+    });
+  },
 };
 
 // Auth API endpoints

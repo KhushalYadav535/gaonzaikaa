@@ -37,8 +37,13 @@ const RestaurantManagement: React.FC = () => {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-  const { adminName } = useAdminSession();
-  const isAdmin = adminName === 'admin';
+  const { adminRole, isLoggedIn } = useAdminSession();
+  const isAdmin = isLoggedIn && (
+    adminRole === 'super_admin' ||
+    adminRole === 'admin' ||
+    adminRole === 'restaurant_manager' ||
+    adminRole === 'delivery_manager'
+  );
 
   // Details modal state
   const [showDetails, setShowDetails] = useState(false);
@@ -113,6 +118,20 @@ const RestaurantManagement: React.FC = () => {
       }
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Failed to update restaurant.', 'error');
+    }
+  };
+
+  const handleToggleActive = async (id: string, nextActive: boolean) => {
+    try {
+      const response = await adminAPI.updateRestaurant(id, { isActive: nextActive });
+      if (response.data.success) {
+        setRestaurants(restaurants => restaurants.map(r => r._id === id ? { ...r, isActive: nextActive } : r));
+        showToast(`Restaurant ${nextActive ? 'is now Online' : 'set to Offline'}.`);
+      } else {
+        showToast(response.data.message || 'Failed to update restaurant status.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to update restaurant status.', 'error');
     }
   };
 
@@ -237,6 +256,7 @@ const RestaurantManagement: React.FC = () => {
               <th className="py-2 px-4 border-b">Name</th>
               <th className="py-2 px-4 border-b">Address</th>
               <th className="py-2 px-4 border-b">Cuisine</th>
+              <th className="py-2 px-4 border-b">Status</th>
               <th className="py-2 px-4 border-b">Actions</th>
             </tr>
           </thead>
@@ -253,6 +273,22 @@ const RestaurantManagement: React.FC = () => {
                 </td>
                 <td className="py-2 px-4 border-b group transition hover:bg-orange-100">
                   <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">{restaurant.cuisine}</span>
+                </td>
+                <td className="py-2 px-4 border-b group transition hover:bg-orange-100">
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${restaurant.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-700'}`}>
+                      {restaurant.isActive ? 'Online' : 'Offline'}
+                    </span>
+                    {isAdmin && (
+                      <button
+                        className={`px-3 py-1 rounded text-xs font-semibold transition ${restaurant.isActive ? 'bg-gray-300 text-gray-800 hover:bg-gray-400' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
+                        onClick={() => handleToggleActive(restaurant._id, !restaurant.isActive)}
+                        title={restaurant.isActive ? 'Set Offline' : 'Set Online'}
+                      >
+                        {restaurant.isActive ? 'Set Offline' : 'Set Online'}
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td className="py-2 px-4 border-b flex flex-wrap gap-2 group transition hover:bg-orange-100">
                   <button className="bg-indigo-500 text-white px-2 py-1 rounded transition hover:bg-indigo-600 active:scale-95" onClick={() => openDetails(restaurant)}>Details</button>

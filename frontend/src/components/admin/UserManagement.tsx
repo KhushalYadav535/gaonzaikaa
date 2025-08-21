@@ -272,8 +272,13 @@ const UserManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const usersPerPage = 10;
-  const { adminName } = useAdminSession();
-  const isAdmin = adminName === 'admin';
+  const { adminRole, isLoggedIn } = useAdminSession();
+  const isAdmin = isLoggedIn && (
+    adminRole === 'super_admin' ||
+    adminRole === 'admin' ||
+    adminRole === 'restaurant_manager' ||
+    adminRole === 'delivery_manager'
+  );
 
   useEffect(() => {
     const fetchUsers = async () => {
