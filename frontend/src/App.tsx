@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsConditions from './components/TermsConditions';
 import RefundCancellationPolicy from './components/RefundCancellationPolicy';
+import DeleteAccount from './components/DeleteAccount';
 import Sidebar from './components/admin/Sidebar';
 import Dashboard from './components/admin/Dashboard';
 import UserManagement from './components/admin/UserManagement';
@@ -67,6 +68,7 @@ function App() {
           <Route path="/privacy-policy" element={<><Navbar /><PrivacyPolicy /><Footer /></>} />
           <Route path="/terms-conditions" element={<><Navbar /><TermsConditions /><Footer /></>} />
           <Route path="/refund-cancellation" element={<><Navbar /><RefundCancellationPolicy /><Footer /></>} />
+          <Route path="/delete-account" element={<><Navbar /><DeleteAccount /><Footer /></>} />
           {/* Admin Panel Nested Routes */}
           <Route path="/admin" element={<div className="admin-bg"><ProtectedAdminLayout /></div>}>
             <Route index element={<Dashboard />} />

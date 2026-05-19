@@ -109,7 +109,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-orange-300 flex-shrink-0" />
-                <p className="text-orange-200 text-sm">info@gaonzaika.com</p>
+                <p className="text-orange-200 text-sm">gaonzaika@gmail.com</p>
               </div>
             </div>
           </div>
@@ -160,6 +160,12 @@ const Footer = () => {
                 className="text-orange-200 hover:text-white transition-colors duration-200"
               >
                 Refund & Cancellation Policy
+              </button>
+              <button
+                onClick={() => navigate('/delete-account')}
+                className="text-orange-200 hover:text-white transition-colors duration-200"
+              >
+                Delete Account
               </button>
             </div>
           </div>

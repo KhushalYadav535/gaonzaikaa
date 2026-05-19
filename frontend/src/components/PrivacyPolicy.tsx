@@ -165,7 +165,7 @@ const PrivacyPolicy = () => {
               <p>If you have any questions about this Privacy Policy, please contact us:</p>
               <p><strong>Address:</strong> Gaon Zaika Restaurant, Janghai, Prayagraj, Uttar Pradesh</p>
               <p><strong>Phone:</strong> +91 81828 38680 / +91 90057 54137</p>
-              <p><strong>Email:</strong> privacy@gaonzaika.com</p>
+              <p><strong>Email:</strong> gaonzaika@gmail.com</p>
             </div>
           </section>
         </div>
