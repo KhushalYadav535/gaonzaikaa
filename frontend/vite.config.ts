@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   base: '/',
   build: {
-    outDir: 'public',
+    outDir: 'dist',
   },
   optimizeDeps: {
     exclude: ['lucide-react'],
