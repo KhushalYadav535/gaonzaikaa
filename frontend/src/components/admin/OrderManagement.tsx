@@ -147,10 +147,15 @@ const OrderManagement: React.FC = () => {
     { key: 'delivered', label: 'Delivered', icon: <FaCheckCircle /> },
   ];
 
-  const filteredOrders = orders.filter(order =>
-    order.customerInfo.name.toLowerCase().includes(search.toLowerCase()) ||
-    order.restaurant?.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredOrders = orders.filter(order => {
+    const restName = (order.restaurant?.name || (order as any).restaurantId?.name || '').toLowerCase();
+    return (
+      (order.customerInfo?.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      restName.includes(search.toLowerCase()) ||
+      (order.customerInfo?.phone || '').includes(search) ||
+      (order.orderId || '').toLowerCase().includes(search.toLowerCase())
+    );
+  });
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
 

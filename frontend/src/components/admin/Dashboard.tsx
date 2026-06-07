@@ -46,6 +46,12 @@ const Dashboard: React.FC = () => {
   const [modalData, setModalData] = useState<any[]>([]);
   const [modalLoading, setModalLoading] = useState(false);
 
+  const [config, setConfig] = useState({
+    isRainModeActive: false,
+    surgeFeeType: 'flat',
+    surgeFeeValue: 0
+  });
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -53,6 +59,10 @@ const Dashboard: React.FC = () => {
         const response = await adminAPI.getDashboard();
         if (response.data.success) {
           setDashboardData(response.data.data);
+        }
+        const configRes = await adminAPI.getConfig();
+        if (configRes.data.success) {
+          setConfig(configRes.data.data);
         }
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to fetch dashboard data');
@@ -63,6 +73,18 @@ const Dashboard: React.FC = () => {
 
     fetchDashboardData();
   }, []);
+
+  const handleToggleRainMode = async () => {
+    try {
+      const updatedStatus = !config.isRainModeActive;
+      const res = await adminAPI.updateConfig({ isRainModeActive: updatedStatus });
+      if (res.data.success) {
+        setConfig(prev => ({ ...prev, isRainModeActive: updatedStatus }));
+      }
+    } catch (err) {
+      console.error('Failed to toggle rain mode');
+    }
+  };
 
   const handleCardClick = async (type: 'users' | 'restaurants' | 'orders' | 'earnings') => {
     setModal(type);
@@ -209,6 +231,32 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Settings Panel */}
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-8 flex items-center justify-between border-l-4 border-blue-500">
+        <div>
+          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            ⛈️ Surge Pricing & Rain Mode
+          </h3>
+          <p className="text-gray-500 text-sm mt-1">Enable this to apply a surge fee on all new orders during high demand or bad weather.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="font-semibold text-gray-700">Surge Fee: {config.surgeFeeType === 'flat' ? '₹' : ''}{config.surgeFeeValue}{config.surgeFeeType === 'percentage' ? '%' : ''}</div>
+            <Link to="/admin/settings" className="text-sm text-blue-500 hover:underline">Configure</Link>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              className="sr-only peer" 
+              checked={config.isRainModeActive}
+              onChange={handleToggleRainMode}
+            />
+            <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-500 shadow-inner"></div>
+          </label>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row gap-4">
         <Link to="/admin/users" className="bg-orange-500 text-white px-6 py-3 rounded-xl shadow hover:bg-orange-600 text-center active:scale-95 transition font-semibold tracking-wide">User Management</Link>
         <Link to="/admin/restaurants" className="bg-orange-500 text-white px-6 py-3 rounded-xl shadow hover:bg-orange-600 text-center active:scale-95 transition font-semibold tracking-wide">Restaurant Management</Link>

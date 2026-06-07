@@ -1,27 +1,34 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminSession } from './AdminSessionContext';
-import { FaTachometerAlt, FaUsers, FaStore, FaClipboardList, FaSignOutAlt, FaChartBar, FaTruck, FaClipboardCheck, FaGift, FaHeadset, FaBell, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaTachometerAlt, FaUsers, FaStore, FaClipboardList, FaSignOutAlt, FaChartBar, FaTruck, FaClipboardCheck, FaGift, FaHeadset, FaBell, FaMapMarkerAlt, FaTag, FaRupeeSign, FaMoneyBillWave, FaImage, FaUndo, FaCog } from 'react-icons/fa';
 
 const links = [
   { to: '/admin', label: 'Dashboard', icon: <FaTachometerAlt /> },
   { to: '/admin/analytics', label: 'Analytics', icon: <FaChartBar /> },
   { to: '/admin/daily-order', label: 'Daily Order', icon: <FaClipboardList /> },
+  { to: '/admin/offers', label: 'Offers & Banners', icon: <FaTag /> },
+  { to: '/admin/coupons', label: 'Coupons', icon: <FaGift /> },
+  { to: '/admin/banners', label: 'App Banners', icon: <FaImage /> },
+  { to: '/admin/live-map', label: 'Live Map', icon: <FaMapMarkerAlt /> },
   { to: '/admin/delivery-staff', label: 'Delivery Staff', icon: <FaTruck /> },
   { to: '/admin/onboarding', label: 'Onboarding', icon: <FaClipboardCheck /> },
-  { to: '/admin/coupons', label: 'Coupons', icon: <FaGift /> },
+  { to: '/admin/payouts', label: 'Payouts', icon: <FaMoneyBillWave /> },
+  { to: '/admin/disputes', label: 'Refunds & Disputes', icon: <FaUndo /> },
   { to: '/admin/support', label: 'Support', icon: <FaHeadset /> },
   { to: '/admin/notifications', label: 'Notifications', icon: <FaBell /> },
   { to: '/admin/villages', label: 'Villages', icon: <FaMapMarkerAlt /> },
   { to: '/admin/users', label: 'User Management', icon: <FaUsers /> },
-  { to: '/admin/restaurants', label: 'Restaurant Management', icon: <FaStore /> },
+  { to: '/admin/restaurants', label: 'Restaurants', icon: <FaStore /> },
   { to: '/admin/orders', label: 'Order Management', icon: <FaClipboardList /> },
+  { to: '/admin/earnings', label: 'Earnings', icon: <FaRupeeSign /> },
+  { to: '/admin/settings', label: 'Settings', icon: <FaCog /> },
 ];
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoggedIn, adminName, logout } = useAdminSession();
+  const { isLoggedIn, adminName, adminRole, logout } = useAdminSession();
   const [open, setOpen] = useState(false);
 
   const handleLogout = () => {
@@ -67,6 +74,16 @@ const Sidebar: React.FC = () => {
                 {link.label}
               </Link>
             ))}
+            {isLoggedIn && adminRole === 'super_admin' && (
+              <Link
+                to="/admin/sub-admins"
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all text-base ${location.pathname === '/admin/sub-admins' ? 'bg-orange-100 border-l-4 border-orange-500 text-orange-800 shadow' : 'text-gray-700 hover:bg-orange-50'}`}
+                onClick={() => setOpen(false)}
+              >
+                <span className="text-xl"><FaUsers /></span>
+                Sub-Admins
+              </Link>
+            )}
           </nav>
           {isLoggedIn && (
             <div className="mb-4 flex items-center gap-2 bg-orange-50 px-3 py-2 rounded-lg shadow text-lg font-bold text-orange-700 border border-orange-200">

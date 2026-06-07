@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaUserTie, FaPhone, FaCheckCircle, FaTruck, FaUserSlash, FaEdit, FaTrash, FaPlus, FaUserCircle, FaThList, FaThLarge, FaSearch } from 'react-icons/fa';
 import { adminAPI, authAPI } from '../../services/api';
 import Toast from './Toast';
+import { UserStatsModal } from './UserManagement';
 
 const statusColors: { [key: string]: string } = {
   active: 'bg-gradient-to-r from-emerald-200 to-emerald-400 text-emerald-900',
@@ -79,9 +80,17 @@ const DeliveryStaffManagement: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Search and Filter state
+// Search and Filter state
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  // Stats Modal state
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [selectedStaffForStats, setSelectedStaffForStats] = useState<Staff | null>(null);
+
+  // Import UserStatsModal at the top (conceptually)
+  // We'll import it correctly at the top of the file in another chunk
+
 
   const fetchStaff = async () => {
     setLoading(true);
@@ -514,6 +523,7 @@ const DeliveryStaffManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-2 px-4 border-b flex gap-2">
+                      <button onClick={() => { setSelectedStaffForStats(st); setStatsModalOpen(true); }} className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-full flex items-center justify-center transition-all hover:scale-105" title="View Stats"><FaThList /></button>
                       <button onClick={() => openEdit(st)} className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full flex items-center justify-center" title="Edit"><FaEdit /></button>
                       <button 
                         onClick={() => confirmDelete(st._id)} 
@@ -619,6 +629,13 @@ const DeliveryStaffManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Stats Modal */}
+      <UserStatsModal 
+        user={selectedStaffForStats ? { ...selectedStaffForStats, role: 'delivery' } as any : null} 
+        isOpen={statsModalOpen} 
+        onClose={() => { setStatsModalOpen(false); setSelectedStaffForStats(null); }} 
+      />
 
       {/* Toast */}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

@@ -31,9 +31,13 @@ const Login: React.FC = () => {
       if (response.data.success) {
         console.log('Login successful, response data:', response.data);
         console.log('Response.data.data:', response.data.data);
-        // Use backend's returned name and role
-        const { name, role } = response.data.data;
+        // Use backend's returned name, role and token
+        const { name, role, token } = response.data.data;
         console.log('Extracted name:', name, 'role:', role);
+        // Save JWT token so API interceptor can attach it to future requests
+        if (token) {
+          localStorage.setItem('adminToken', token);
+        }
         login(name, role);
         navigate('/admin');
       } else {

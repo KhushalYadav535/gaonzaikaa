@@ -20,12 +20,19 @@ import Login from './components/admin/Login';
 import Analytics from './components/admin/Analytics';
 import DeliveryStaffManagement from './components/admin/DeliveryStaffManagement';
 import RestaurantOnboarding from './components/admin/RestaurantOnboarding';
+import PayoutManagement from './components/admin/PayoutManagement';
+import BannerManagement from './components/admin/BannerManagement';
+import LiveMap from './components/admin/LiveMap';
+import DisputeManagement from './components/admin/DisputeManagement';
 import CouponManagement from './components/admin/CouponManagement';
 import SupportManagement from './components/admin/SupportManagement';
 import NotificationManagement from './components/admin/NotificationManagement';
 import VillageManagement from './components/admin/VillageManagement';
 import DailyOrder from './components/admin/DailyOrder';
 import AdminEarnings from './components/admin/AdminEarnings';
+import OffersManagement from './components/admin/OffersManagement';
+import SubAdminManagement from './components/admin/SubAdminManagement';
+import SystemSettings from './components/admin/SystemSettings';
 import { AdminSessionProvider, useAdminSession } from './components/admin/AdminSessionContext';
 
 const AdminUsers = UserManagement;
@@ -33,11 +40,15 @@ const AdminRestaurants = RestaurantManagement;
 const AdminOrders = OrderManagement;
 
 function ProtectedAdminLayout() {
-  const { isLoggedIn } = useAdminSession();
+  const { isLoggedIn, loading } = useAdminSession();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!isLoggedIn) navigate('/admin/login');
-  }, [isLoggedIn, navigate]);
+    if (!loading && !isLoggedIn) navigate('/admin/login');
+  }, [isLoggedIn, loading, navigate]);
+
+  // Wait until localStorage check is done before rendering
+  if (loading) return null;
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
@@ -76,14 +87,21 @@ function App() {
             <Route path="daily-order" element={<DailyOrder />} />
             <Route path="delivery-staff" element={<DeliveryStaffManagement />} />
             <Route path="onboarding" element={<RestaurantOnboarding />} />
+            <Route path="payouts" element={<PayoutManagement />} />
+            <Route path="banners" element={<BannerManagement />} />
+            <Route path="live-map" element={<LiveMap />} />
+            <Route path="disputes" element={<DisputeManagement />} />
             <Route path="coupons" element={<CouponManagement />} />
             <Route path="support" element={<SupportManagement />} />
             <Route path="notifications" element={<NotificationManagement />} />
             <Route path="villages" element={<VillageManagement />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="sub-admins" element={<SubAdminManagement />} />
+            <Route path="settings" element={<SystemSettings />} />
             <Route path="restaurants" element={<AdminRestaurants />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="earnings" element={<AdminEarnings />} />
+            <Route path="offers" element={<OffersManagement />} />
           </Route>
         </Routes>
       </div>

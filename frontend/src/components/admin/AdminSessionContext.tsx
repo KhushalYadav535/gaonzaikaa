@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-// import { adminUsers } from '../../mock/data'; // Remove this line
 
 interface AdminSessionContextType {
   isLoggedIn: boolean;
+  loading: boolean;
   adminName: string;
   adminRole: string;
   login: (name: string, role: string) => void;
@@ -14,6 +14,7 @@ const AdminSessionContext = createContext<AdminSessionContextType | undefined>(u
 
 export const AdminSessionProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true); // true until localStorage is checked
   const [adminName, setAdminName] = useState('');
   const [adminRole, setAdminRole] = useState('super_admin');
 
@@ -25,6 +26,7 @@ export const AdminSessionProvider = ({ children }: { children: ReactNode }) => {
       setAdminName(adminName);
       setAdminRole(adminRole || 'super_admin');
     }
+    setLoading(false); // done checking
   }, []);
 
   const login = (name: string, role: string) => {
@@ -39,6 +41,7 @@ export const AdminSessionProvider = ({ children }: { children: ReactNode }) => {
     setAdminName('');
     setAdminRole('super_admin');
     localStorage.removeItem('adminSession');
+    localStorage.removeItem('adminToken');
   };
 
   const setRole = (role: string) => {
@@ -47,7 +50,7 @@ export const AdminSessionProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AdminSessionContext.Provider value={{ isLoggedIn, adminName, adminRole, login, logout, setRole }}>
+    <AdminSessionContext.Provider value={{ isLoggedIn, loading, adminName, adminRole, login, logout, setRole }}>
       {children}
     </AdminSessionContext.Provider>
   );
@@ -57,4 +60,4 @@ export const useAdminSession = () => {
   const ctx = useContext(AdminSessionContext);
   if (!ctx) throw new Error('useAdminSession must be used within AdminSessionProvider');
   return ctx;
-}; 
+};

@@ -30,11 +30,8 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - redirect to login
-      localStorage.removeItem('adminToken');
-      window.location.href = '/admin/login';
-    }
+    // Don't force-redirect on 401 — let the React session context handle auth state
+    // A hard window.location.href redirect here would wipe state and cause reload loops
     return Promise.reject(error);
   }
 );
@@ -56,8 +53,8 @@ async function retryOnceOnNetworkError<T>(fn: () => Promise<T>): Promise<T> {
 export const adminAPI = {
   // Login
   login: (credentials: { email: string; password: string }) =>
-    // Backend expects admin auth under /auth/admin/login
-    retryOnceOnNetworkError(() => api.post('/auth/admin/login', credentials)),
+    // Admin login is handled at /admin/login (not /auth/admin/login)
+    retryOnceOnNetworkError(() => api.post('/admin/login', credentials)),
 
   // Dashboard
   getDashboard: () => api.get('/admin/dashboard'),
@@ -84,6 +81,8 @@ export const adminAPI = {
   // Users
   getUsers: (params?: { role?: string; limit?: number; page?: number }) =>
     api.get('/admin/users', { params }),
+  getUserStats: (id: string, role: string) =>
+    api.get(`/admin/users/${id}/stats`, { params: { role } }),
   updateUser: (id: string, data: any) =>
     api.put(`/admin/users/${id}`, data),
   deleteUser: (id: string, role: string) => {
@@ -128,7 +127,106 @@ export const adminAPI = {
       action: 'delete'
     });
   },
+
+  // ─── NEW ADMIN APIS ───────────────────────────────────────────────────────
+
+  // Create Vendor (admin only — creates vendor + restaurant together)
+  createVendor: (data: {
+    name: string; email: string; phone: string; password: string;
+    restaurantName: string; restaurantAddress?: string; cuisine?: string;
+  }) => api.post('/admin/create-vendor', data),
+
+  // Create Delivery Boy (admin only)
+  createDelivery: (data: {
+    name: string; email: string; phone: string; password: string; vehicleNumber: string;
+  }) => api.post('/admin/create-delivery', data),
+
+  // Reset password for vendor or delivery
+  resetUserPassword: (id: string, role: 'vendor' | 'delivery', newPassword: string) =>
+    api.post('/admin/reset-password', { id, role, newPassword }),
+
+  // Add restaurant (for existing vendor)
+  addRestaurant: (data: {
+    name: string; cuisine: string; vendorId: string; phone: string; email?: string; address?: string;
+  }) => api.post('/admin/restaurants', data),
+
+  // Onboarding
+  getPendingOnboarding: () => api.get('/admin/onboarding/pending'),
+  updateOnboardingStatus: (id: string, role: string, action: 'approve' | 'reject') => 
+    api.put(`/admin/onboarding/${id}/${role}/${action}`),
+
+  // Get restaurant menu
+  getRestaurantMenu: (id: string) => api.get(`/admin/restaurants/${id}/menu`),
+
+  // Add menu item to restaurant
+  addMenuItem: (restaurantId: string, item: {
+    name: string; price: number; category: string; description?: string; isVeg?: boolean; preparationTime?: number;
+  }) => api.post(`/admin/restaurants/${restaurantId}/menu`, item),
+
+  // Delete menu item
+  deleteMenuItem: (restaurantId: string, itemId: string) =>
+    api.delete(`/admin/restaurants/${restaurantId}/menu/${itemId}`),
+
+  // Get all vendors (for dropdowns)
+  getVendors: () => api.get('/admin/users?role=vendor&limit=100'),
+
+  // ─── OFFERS & BANNERS ───────────────────────────────────────────────────
+  getOffers: () => api.get('/admin/offers'),
+  getActiveOffers: () => api.get('/admin/offers/active'),
+  createOffer: (data: any) => api.post('/admin/offers', data),
+  updateOffer: (id: string, data: any) => api.put(`/admin/offers/${id}`, data),
+  deleteOffer: (id: string) => api.delete(`/admin/offers/${id}`),
+
+  getBanners: () => api.get('/admin/banners'),
+  createBanner: (data: any) => api.post('/admin/banners', data),
+  updateBanner: (id: string, data: any) => api.put(`/admin/banners/${id}`, data),
+  deleteBanner: (id: string) => api.delete(`/admin/banners/${id}`),
+
+  // ─── LIVE TRACKING ──────────────────────────────────────────────────
+  getDeliveryLocations: () => api.get('/admin/delivery-locations'),
+
+  // ─── DISPUTES & REFUNDS ─────────────────────────────────────────────
+  getDisputes: () => api.get('/admin/disputes'),
+  updateRefundStatus: (orderId: string, data: { refundStatus?: string, disputeNotes?: string }) => 
+    api.post(`/admin/orders/${orderId}/refund`, data),
+
+  // ─── BROADCAST NOTIFICATIONS ────────────────────────────────────────
+  getBroadcastNotifications: () => api.get('/admin/notifications'),
+  sendBroadcastNotification: (data: { title: string, message: string, targetAudience: string }) => 
+    api.post('/admin/notifications', data),
+
+  // ─── COUPONS ──────────────────────────────────────────────────
+  getCoupons: () => api.get('/admin/coupons'),
+  createCoupon: (data: any) => api.post('/admin/coupons', data),
+  updateCoupon: (id: string, data: any) => api.put(`/admin/coupons/${id}`, data),
+  deleteCoupon: (id: string) => api.delete(`/admin/coupons/${id}`),
+
+  // ─── ANALYTICS ────────────────────────────────────────────────
+  getAnalytics: () => api.get('/admin/dashboard'),
+  getOrdersData: (params?: any) => api.get('/admin/orders', { params }),
+
+  // ─── APP CONFIG & PAYOUTS ─────────────────────────────────────
+  getConfig: () => api.get('/admin/config'),
+  updateConfig: (data: any) => api.put('/admin/config', data),
+
+  getPayouts: (status?: string, role?: string) => {
+    let url = '/admin/payouts';
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (role) params.append('role', role);
+    if (params.toString()) url += `?${params.toString()}`;
+    return api.get(url);
+  },
+  markPayoutPaid: (payoutId: string, transactionRef: string, notes?: string) => 
+    api.post('/admin/payouts/mark-paid', { payoutId, transactionRef, notes }),
+
+  // ─── SUB-ADMINS ────────────────────────────────────────────────
+  getSubAdmins: () => api.get('/admin/admins'),
+  createSubAdmin: (data: any) => api.post('/admin/admins', data),
+  updateSubAdmin: (id: string, data: any) => api.put(`/admin/admins/${id}`, data),
+  deleteSubAdmin: (id: string) => api.delete(`/admin/admins/${id}`),
 };
+
 
 // Auth API endpoints
 export const authAPI = {
