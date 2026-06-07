@@ -4,37 +4,43 @@ import { useAdminSession } from './AdminSessionContext';
 import { FaTachometerAlt, FaUsers, FaStore, FaClipboardList, FaSignOutAlt, FaChartBar, FaTruck, FaClipboardCheck, FaGift, FaHeadset, FaBell, FaMapMarkerAlt, FaTag, FaRupeeSign, FaMoneyBillWave, FaImage, FaUndo, FaCog } from 'react-icons/fa';
 
 const links = [
-  { to: '/admin', label: 'Dashboard', icon: <FaTachometerAlt /> },
-  { to: '/admin/analytics', label: 'Analytics', icon: <FaChartBar /> },
-  { to: '/admin/daily-order', label: 'Daily Order', icon: <FaClipboardList /> },
-  { to: '/admin/offers', label: 'Offers & Banners', icon: <FaTag /> },
-  { to: '/admin/coupons', label: 'Coupons', icon: <FaGift /> },
-  { to: '/admin/banners', label: 'App Banners', icon: <FaImage /> },
-  { to: '/admin/live-map', label: 'Live Map', icon: <FaMapMarkerAlt /> },
-  { to: '/admin/delivery-staff', label: 'Delivery Staff', icon: <FaTruck /> },
-  { to: '/admin/onboarding', label: 'Onboarding', icon: <FaClipboardCheck /> },
-  { to: '/admin/payouts', label: 'Payouts', icon: <FaMoneyBillWave /> },
-  { to: '/admin/disputes', label: 'Refunds & Disputes', icon: <FaUndo /> },
-  { to: '/admin/support', label: 'Support', icon: <FaHeadset /> },
-  { to: '/admin/notifications', label: 'Notifications', icon: <FaBell /> },
-  { to: '/admin/villages', label: 'Villages', icon: <FaMapMarkerAlt /> },
-  { to: '/admin/users', label: 'User Management', icon: <FaUsers /> },
-  { to: '/admin/restaurants', label: 'Restaurants', icon: <FaStore /> },
-  { to: '/admin/orders', label: 'Order Management', icon: <FaClipboardList /> },
-  { to: '/admin/earnings', label: 'Earnings', icon: <FaRupeeSign /> },
-  { to: '/admin/settings', label: 'Settings', icon: <FaCog /> },
+  { to: '/admin', label: 'Dashboard', icon: <FaTachometerAlt />, permission: 'read' },
+  { to: '/admin/analytics', label: 'Analytics', icon: <FaChartBar />, permission: 'view_analytics' },
+  { to: '/admin/daily-order', label: 'Daily Order', icon: <FaClipboardList />, permission: 'manage_orders' },
+  { to: '/admin/offers', label: 'Offers & Banners', icon: <FaTag />, permission: 'write' },
+  { to: '/admin/coupons', label: 'Coupons', icon: <FaGift />, permission: 'write' },
+  { to: '/admin/banners', label: 'App Banners', icon: <FaImage />, permission: 'write' },
+  { to: '/admin/live-map', label: 'Live Map', icon: <FaMapMarkerAlt />, permission: 'manage_orders' },
+  { to: '/admin/delivery-staff', label: 'Delivery Staff', icon: <FaTruck />, permission: 'manage_users' },
+  { to: '/admin/onboarding', label: 'Onboarding', icon: <FaClipboardCheck />, permission: 'manage_restaurants' },
+  { to: '/admin/payouts', label: 'Payouts', icon: <FaMoneyBillWave />, permission: 'view_analytics' },
+  { to: '/admin/disputes', label: 'Refunds & Disputes', icon: <FaUndo />, permission: 'manage_orders' },
+  { to: '/admin/support', label: 'Support', icon: <FaHeadset />, permission: 'read' },
+  { to: '/admin/notifications', label: 'Notifications', icon: <FaBell />, permission: 'write' },
+  { to: '/admin/villages', label: 'Villages', icon: <FaMapMarkerAlt />, permission: 'write' },
+  { to: '/admin/users', label: 'User Management', icon: <FaUsers />, permission: 'manage_users' },
+  { to: '/admin/restaurants', label: 'Restaurants', icon: <FaStore />, permission: 'manage_restaurants' },
+  { to: '/admin/orders', label: 'Order Management', icon: <FaClipboardList />, permission: 'manage_orders' },
+  { to: '/admin/earnings', label: 'Earnings', icon: <FaRupeeSign />, permission: 'view_analytics' },
+  { to: '/admin/settings', label: 'Settings', icon: <FaCog />, permission: 'write' },
 ];
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoggedIn, adminName, adminRole, logout } = useAdminSession();
+  const { isLoggedIn, adminName, adminRole, adminPermissions, logout } = useAdminSession();
   const [open, setOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/admin/login');
   };
+
+  const filteredLinks = links.filter(link => {
+    if (adminRole === 'super_admin') return true;
+    if (!link.permission) return true;
+    return adminPermissions?.includes(link.permission);
+  });
 
   return (
     <>
@@ -62,8 +68,8 @@ const Sidebar: React.FC = () => {
             <FaTachometerAlt className="text-3xl" />
             <span>Admin Panel</span>
           </div>
-          <nav className="flex flex-col gap-2 mb-8">
-            {links.map(link => (
+          <nav className="flex flex-col gap-2 mb-8 overflow-y-auto max-h-[60vh] custom-scrollbar">
+            {filteredLinks.map(link => (
               <Link
                 key={link.to}
                 to={link.to}

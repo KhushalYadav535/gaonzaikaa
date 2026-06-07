@@ -5,6 +5,7 @@ import { FaUtensils, FaMapMarkerAlt, FaLeaf } from 'react-icons/fa';
 import { adminAPI } from '../../services/api';
 
 interface MenuItem {
+  _id?: string;
   name: string;
   price: number;
 }
@@ -152,11 +153,19 @@ const RestaurantManagement: React.FC = () => {
     }
   };
 
-  // Details modal handlers (local only, not persisted)
-  const openDetails = (restaurant: Restaurant) => {
+  // Details modal handlers
+  const openDetails = async (restaurant: Restaurant) => {
     setDetailsRestaurant(restaurant);
     setImageUrl(restaurant.image || '');
     setShowDetails(true);
+    try {
+      const res = await adminAPI.getRestaurantMenu(restaurant._id);
+      if (res.data.success) {
+        setDetailsRestaurant(r => r ? { ...r, menu: res.data.data } : r);
+      }
+    } catch (err) {
+      console.error('Failed to fetch menu', err);
+    }
   };
   const closeDetails = () => {
     setShowDetails(false);
@@ -164,13 +173,37 @@ const RestaurantManagement: React.FC = () => {
     setMenuForm({ name: '', price: 0 });
     setImageUrl('');
   };
-  const handleMenuAdd = () => {
-    if (!menuForm.name || !menuForm.price) return;
-    setDetailsRestaurant(r => r ? { ...r, menu: [...(r.menu || []), { ...menuForm }] } : r);
-    setMenuForm({ name: '', price: 0 });
+  const handleMenuAdd = async () => {
+    if (!menuForm.name || !menuForm.price || !detailsRestaurant) return;
+    try {
+      const res = await adminAPI.addMenuItem(detailsRestaurant._id, {
+        name: menuForm.name,
+        price: menuForm.price,
+        category: 'Main Course'
+      });
+      if (res.data.success) {
+        setDetailsRestaurant(r => r ? { ...r, menu: [...(r.menu || []), res.data.data] } : r);
+        setMenuForm({ name: '', price: 0 });
+        showToast('Menu item added successfully');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to add menu item', 'error');
+    }
   };
-  const handleMenuRemove = (idx: number) => {
-    setDetailsRestaurant(r => r ? { ...r, menu: (r.menu || []).filter((_, i) => i !== idx) } : r);
+  const handleMenuRemove = async (item: MenuItem, idx: number) => {
+    if (!detailsRestaurant || !item._id) {
+       setDetailsRestaurant(r => r ? { ...r, menu: (r.menu || []).filter((_, i) => i !== idx) } : r);
+       return;
+    }
+    try {
+      const res = await adminAPI.deleteMenuItem(detailsRestaurant._id, item._id);
+      if (res.data.success) {
+        setDetailsRestaurant(r => r ? { ...r, menu: (r.menu || []).filter((_, i) => i !== idx) } : r);
+        showToast('Menu item deleted successfully');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to delete menu item', 'error');
+    }
   };
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -181,7 +214,6 @@ const RestaurantManagement: React.FC = () => {
   };
   const saveDetails = () => {
     if (!detailsRestaurant) return;
-    // Optionally, persist menu/image changes to backend here
     setRestaurants(restaurants => restaurants.map(r => r._id === detailsRestaurant._id ? detailsRestaurant : r));
     showToast('Details updated.');
     closeDetails();
@@ -343,8 +375,8 @@ const RestaurantManagement: React.FC = () => {
               <ul className="mb-2">
                 {(detailsRestaurant.menu || []).map((item, idx) => (
                   <li key={idx} className="flex items-center gap-2 mb-1">
-                    <span>{item.name} - 9{item.price}</span>
-                    <button className="text-red-500" onClick={() => handleMenuRemove(idx)} title="Remove">&times;</button>
+                    <span>{item.name} - ₹{item.price}</span>
+                    <button className="text-red-500" onClick={() => handleMenuRemove(item, idx)} title="Remove">&times;</button>
                   </li>
                 ))}
               </ul>

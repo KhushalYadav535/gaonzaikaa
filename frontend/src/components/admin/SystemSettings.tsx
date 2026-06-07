@@ -141,6 +141,44 @@ export default function SystemSettings() {
                 />
               </div>
             </div>
+
+            {/* ── Live Customer Preview ─────────────────────────────────── */}
+            <div className="md:col-span-2">
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">📱</span>
+                  <span className="text-sm font-bold text-orange-800">Customer App — Live Preview</span>
+                  <span className="ml-auto text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">Real-time</span>
+                </div>
+                <div className="bg-white rounded-lg border border-orange-100 p-3 space-y-2 text-sm">
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span>Item Total (example)</span>
+                    <span className="font-semibold">₹250</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Delivery Fee</span>
+                    {config.customerDeliveryFee === 0 ? (
+                      <span className="font-bold text-green-600">FREE 🎉</span>
+                    ) : config.freeDeliveryThreshold > 0 && 250 >= config.freeDeliveryThreshold ? (
+                      <span className="font-bold text-green-600">FREE (above ₹{config.freeDeliveryThreshold})</span>
+                    ) : (
+                      <span className="font-semibold text-gray-800">₹{config.customerDeliveryFee}</span>
+                    )}
+                  </div>
+                  <div className="border-t border-gray-100 pt-2 flex justify-between items-center">
+                    <span className="font-bold text-gray-800">Total</span>
+                    <span className="font-bold text-gray-900 text-base">
+                      ₹{250 + (config.customerDeliveryFee === 0 ? 0 : (config.freeDeliveryThreshold > 0 && 250 >= config.freeDeliveryThreshold ? 0 : config.customerDeliveryFee))}
+                    </span>
+                  </div>
+                  {config.freeDeliveryThreshold > 0 && (
+                    <div className="text-xs text-blue-600 bg-blue-50 rounded px-2 py-1 mt-1">
+                      💡 Customer gets free delivery on orders above ₹{config.freeDeliveryThreshold}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

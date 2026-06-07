@@ -31,14 +31,14 @@ const Login: React.FC = () => {
       if (response.data.success) {
         console.log('Login successful, response data:', response.data);
         console.log('Response.data.data:', response.data.data);
-        // Use backend's returned name, role and token
-        const { name, role, token } = response.data.data;
+        // Use backend's returned name, role, permissions and token
+        const { name, role, permissions, token } = response.data.data;
         console.log('Extracted name:', name, 'role:', role);
         // Save JWT token so API interceptor can attach it to future requests
         if (token) {
           localStorage.setItem('adminToken', token);
         }
-        login(name, role);
+        login(name, role, permissions || []);
         navigate('/admin');
       } else {
         console.log('Login failed, response:', response.data);

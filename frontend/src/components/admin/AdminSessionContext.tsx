@@ -5,7 +5,8 @@ interface AdminSessionContextType {
   loading: boolean;
   adminName: string;
   adminRole: string;
-  login: (name: string, role: string) => void;
+  adminPermissions: string[];
+  login: (name: string, role: string, permissions?: string[]) => void;
   logout: () => void;
   setRole: (role: string) => void;
 }
@@ -17,29 +18,33 @@ export const AdminSessionProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true); // true until localStorage is checked
   const [adminName, setAdminName] = useState('');
   const [adminRole, setAdminRole] = useState('super_admin');
+  const [adminPermissions, setAdminPermissions] = useState<string[]>([]);
 
   useEffect(() => {
     const stored = localStorage.getItem('adminSession');
     if (stored) {
-      const { isLoggedIn, adminName, adminRole } = JSON.parse(stored);
+      const { isLoggedIn, adminName, adminRole, adminPermissions } = JSON.parse(stored);
       setIsLoggedIn(isLoggedIn);
       setAdminName(adminName);
       setAdminRole(adminRole || 'super_admin');
+      setAdminPermissions(adminPermissions || []);
     }
     setLoading(false); // done checking
   }, []);
 
-  const login = (name: string, role: string) => {
+  const login = (name: string, role: string, permissions: string[] = []) => {
     setIsLoggedIn(true);
     setAdminName(name);
     setAdminRole(role || 'super_admin');
-    localStorage.setItem('adminSession', JSON.stringify({ isLoggedIn: true, adminName: name, adminRole: role || 'super_admin' }));
+    setAdminPermissions(permissions);
+    localStorage.setItem('adminSession', JSON.stringify({ isLoggedIn: true, adminName: name, adminRole: role || 'super_admin', adminPermissions: permissions }));
   };
 
   const logout = () => {
     setIsLoggedIn(false);
     setAdminName('');
     setAdminRole('super_admin');
+    setAdminPermissions([]);
     localStorage.removeItem('adminSession');
     localStorage.removeItem('adminToken');
   };
@@ -50,7 +55,7 @@ export const AdminSessionProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AdminSessionContext.Provider value={{ isLoggedIn, loading, adminName, adminRole, login, logout, setRole }}>
+    <AdminSessionContext.Provider value={{ isLoggedIn, loading, adminName, adminRole, adminPermissions, login, logout, setRole }}>
       {children}
     </AdminSessionContext.Provider>
   );

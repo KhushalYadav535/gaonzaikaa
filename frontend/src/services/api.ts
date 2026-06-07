@@ -81,6 +81,15 @@ export const adminAPI = {
   // Users
   getUsers: (params?: { role?: string; limit?: number; page?: number }) =>
     api.get('/admin/users', { params }),
+  getAdminStats: (adminId: string) =>
+    api.get(`/admin/stats/${adminId}`),
+
+  // Marketing
+  sendBroadcastNotification: (data: any) =>
+    api.post('/admin/marketing/push-notification', data),
+  getBroadcastNotifications: () =>
+    api.get('/admin/marketing/push-notifications-history'),
+
   getUserStats: (id: string, role: string) =>
     api.get(`/admin/users/${id}/stats`, { params: { role } }),
   updateUser: (id: string, data: any) =>
