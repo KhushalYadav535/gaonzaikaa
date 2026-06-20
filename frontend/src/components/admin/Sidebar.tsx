@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminSession } from './AdminSessionContext';
-import { FaTachometerAlt, FaUsers, FaStore, FaClipboardList, FaSignOutAlt, FaChartBar, FaTruck, FaClipboardCheck, FaGift, FaHeadset, FaBell, FaMapMarkerAlt, FaTag, FaRupeeSign, FaMoneyBillWave, FaImage, FaUndo, FaCog } from 'react-icons/fa';
+import { FaTachometerAlt, FaUsers, FaStore, FaClipboardList, FaSignOutAlt, FaChartBar, FaTruck, FaClipboardCheck, FaGift, FaHeadset, FaBell, FaMapMarkerAlt, FaTag, FaRupeeSign, FaMoneyBillWave, FaImage, FaUndo, FaCog, FaHandshake } from 'react-icons/fa';
 
 const links = [
   { to: '/admin', label: 'Dashboard', icon: <FaTachometerAlt />, permission: 'read' },
@@ -9,6 +9,7 @@ const links = [
   { to: '/admin/daily-order', label: 'Daily Order', icon: <FaClipboardList />, permission: 'manage_orders' },
   { to: '/admin/offers', label: 'Offers & Banners', icon: <FaTag />, permission: 'write' },
   { to: '/admin/coupons', label: 'Coupons', icon: <FaGift />, permission: 'write' },
+  { to: '/admin/affiliates', label: 'Affiliates', icon: <FaHandshake />, permission: 'write' },
   { to: '/admin/banners', label: 'App Banners', icon: <FaImage />, permission: 'write' },
   { to: '/admin/live-map', label: 'Live Map', icon: <FaMapMarkerAlt />, permission: 'manage_orders' },
   { to: '/admin/delivery-staff', label: 'Delivery Staff', icon: <FaTruck />, permission: 'manage_users' },

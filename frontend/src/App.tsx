@@ -33,6 +33,7 @@ import AdminEarnings from './components/admin/AdminEarnings';
 import OffersManagement from './components/admin/OffersManagement';
 import SubAdminManagement from './components/admin/SubAdminManagement';
 import SystemSettings from './components/admin/SystemSettings';
+import AffiliateManagement from './components/admin/AffiliateManagement';
 import { AdminSessionProvider, useAdminSession } from './components/admin/AdminSessionContext';
 
 const AdminUsers = UserManagement;
@@ -102,6 +103,7 @@ function App() {
             <Route path="orders" element={<AdminOrders />} />
             <Route path="earnings" element={<AdminEarnings />} />
             <Route path="offers" element={<OffersManagement />} />
+            <Route path="affiliates" element={<AffiliateManagement />} />
           </Route>
         </Routes>
       </div>

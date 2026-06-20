@@ -167,14 +167,27 @@ export const adminAPI = {
   // Get restaurant menu
   getRestaurantMenu: (id: string) => api.get(`/admin/restaurants/${id}/menu`),
 
-  // Add menu item to restaurant
-  addMenuItem: (restaurantId: string, item: {
-    name: string; price: number; category: string; description?: string; isVeg?: boolean; preparationTime?: number;
-  }) => api.post(`/admin/restaurants/${restaurantId}/menu`, item),
+  // Add menu item (with optional image — uses FormData)
+  addMenuItem: (restaurantId: string, formData: FormData) =>
+    api.post(`/admin/restaurants/${restaurantId}/menu`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+
+  // Update menu item (with optional image — uses FormData)
+  updateMenuItem: (restaurantId: string, itemId: string, formData: FormData) =>
+    api.put(`/admin/restaurants/${restaurantId}/menu/${itemId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
 
   // Delete menu item
   deleteMenuItem: (restaurantId: string, itemId: string) =>
     api.delete(`/admin/restaurants/${restaurantId}/menu/${itemId}`),
+
+  // Upload restaurant image
+  uploadRestaurantImage: (restaurantId: string, formData: FormData) =>
+    api.post(`/admin/restaurants/${restaurantId}/image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
 
   // Get all vendors (for dropdowns)
   getVendors: () => api.get('/admin/users?role=vendor&limit=100'),
@@ -210,6 +223,13 @@ export const adminAPI = {
   updateCoupon: (id: string, data: any) => api.put(`/admin/coupons/${id}`, data),
   deleteCoupon: (id: string) => api.delete(`/admin/coupons/${id}`),
 
+  // ─── VENDOR LIVE TOGGLE ────────────────────────────────────────
+  toggleVendorLive: (vendorId: string) => api.post(`/admin/vendors/${vendorId}/toggle-live`),
+
+  // ─── CUSTOMER OTP TOOLS (Support) ─────────────────────────────
+  getCustomerOTP: (phone: string) => api.get('/admin/customers/otp', { params: { phone } }),
+  generateCustomerOTP: (phone: string) => api.post('/admin/customers/generate-otp', { phone }),
+
   // ─── ANALYTICS ────────────────────────────────────────────────
   getAnalytics: () => api.get('/admin/dashboard'),
   getOrdersData: (params?: any) => api.get('/admin/orders', { params }),
@@ -234,6 +254,16 @@ export const adminAPI = {
   createSubAdmin: (data: any) => api.post('/admin/admins', data),
   updateSubAdmin: (id: string, data: any) => api.put(`/admin/admins/${id}`, data),
   deleteSubAdmin: (id: string) => api.delete(`/admin/admins/${id}`),
+
+  // ─── AFFILIATES ────────────────────────────────────────────────
+  getAffiliates: () => api.get('/admin/affiliates'),
+  createAffiliate: (data: any) => api.post('/admin/affiliates', data),
+  getAffiliate: (id: string) => api.get(`/admin/affiliates/${id}`),
+  updateAffiliate: (id: string, data: any) => api.put(`/admin/affiliates/${id}`, data),
+  deleteAffiliate: (id: string) => api.delete(`/admin/affiliates/${id}`),
+  payoutAffiliate: (id: string, data: { amount?: number; transactionRef?: string; notes?: string }) =>
+    api.post(`/admin/affiliates/${id}/payout`, data),
+  getAffiliateOrders: (id: string) => api.get(`/admin/affiliates/${id}/orders`),
 };
 
 
