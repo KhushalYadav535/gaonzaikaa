@@ -7,7 +7,7 @@ interface Offer {
   _id: string;
   title: string;
   description: string;
-  type: 'percentage' | 'flat' | 'free_delivery' | 'bogo';
+  type: 'percentage' | 'flat' | 'free_delivery' | 'bogo' | 'free_item';
   value: number;
   minOrder: number;
   maxDiscount?: number;
@@ -25,6 +25,9 @@ const TYPE_CONFIG = {
   flat: { label: 'Flat Off', icon: <FaRupeeSign />, color: 'bg-blue-100 text-blue-700' },
   free_delivery: { label: 'Free Delivery', icon: <FaTruck />, color: 'bg-green-100 text-green-700' },
   bogo: { label: 'Buy 1 Get 1', icon: <FaTag />, color: 'bg-purple-100 text-purple-700' },
+  buy_2_get_1: { label: 'Buy 2 Get 1', icon: <FaTag />, color: 'bg-indigo-100 text-indigo-700' },
+  free_item: { label: 'Free Item', icon: <FaGift />, color: 'bg-yellow-100 text-yellow-700' },
+  custom: { label: 'Custom', icon: <FaGift />, color: 'bg-teal-100 text-teal-700' },
 };
 
 const BG_COLORS = [
@@ -36,12 +39,13 @@ const BG_COLORS = [
 const defaultForm = {
   title: '', description: '', type: 'percentage' as const,
   value: 20, minOrder: 0, maxDiscount: undefined as number | undefined,
-  restaurantId: '', backgroundColor: '#FF5722',
+  restaurantId: '', backgroundColor: '#FF5722', customLabel: '',
   validFrom: '', validTo: '', isActive: true, displayOrder: 0,
 };
 
 const OffersManagement: React.FC = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [restaurants, setRestaurants] = useState<{_id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' } | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -51,19 +55,23 @@ const OffersManagement: React.FC = () => {
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => setToast({ message, type });
 
-  const fetchOffers = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await adminAPI.getOffers();
+      const [res, restRes] = await Promise.all([
+        adminAPI.getOffers(),
+        adminAPI.getRestaurants()
+      ]);
       if (res.data.success) setOffers(res.data.data);
+      if (restRes.data.success) setRestaurants(restRes.data.data);
     } catch (err: any) {
-      showToast('Failed to load offers', 'error');
+      showToast('Failed to load data', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchOffers(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -84,6 +92,7 @@ const OffersManagement: React.FC = () => {
       maxDiscount: offer.maxDiscount,
       restaurantId: offer.restaurantId?._id || '',
       backgroundColor: offer.backgroundColor,
+      customLabel: offer.customLabel || '',
       validFrom: offer.validFrom?.split('T')[0] || '',
       validTo: offer.validTo?.split('T')[0] || '',
       isActive: offer.isActive,
@@ -108,7 +117,7 @@ const OffersManagement: React.FC = () => {
         await adminAPI.createOffer(payload);
         showToast('Offer created successfully 🎉');
       }
-      fetchOffers();
+      fetchData();
       setShowModal(false);
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Failed to save offer', 'error');
@@ -209,6 +218,9 @@ const OffersManagement: React.FC = () => {
                       {offer.type === 'flat' && `₹${offer.value}`}
                       {offer.type === 'free_delivery' && '🚴'}
                       {offer.type === 'bogo' && '2×1'}
+                      {offer.type === 'buy_2_get_1' && '3×2'}
+                      {offer.type === 'free_item' && '🎁'}
+                      {offer.type === 'custom' && (offer.customLabel || '✨')}
                     </div>
                   </div>
                   {offer.minOrder > 0 && (
@@ -273,6 +285,9 @@ const OffersManagement: React.FC = () => {
                     {form.type === 'flat' && `₹${form.value}`}
                     {form.type === 'free_delivery' && '🚴'}
                     {form.type === 'bogo' && '2×1'}
+                    {form.type === 'buy_2_get_1' && '3×2'}
+                    {form.type === 'free_item' && '🎁'}
+                    {form.type === 'custom' && (form.customLabel || '✨')}
                   </p>
                 </div>
               </div>
@@ -294,10 +309,20 @@ const OffersManagement: React.FC = () => {
                     <option value="flat">Flat ₹ Off</option>
                     <option value="free_delivery">Free Delivery</option>
                     <option value="bogo">Buy 1 Get 1</option>
+                    <option value="buy_2_get_1">Buy 2 Get 1</option>
+                    <option value="free_item">Free Item</option>
+                    <option value="custom">Custom Label</option>
                   </select>
                 </div>
 
-                {form.type !== 'free_delivery' && form.type !== 'bogo' && (
+                {form.type === 'custom' && (
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Custom Badge Text (max 10 chars)</label>
+                    <input maxLength={10} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none" placeholder="e.g. 5x4, FREE TEA" value={form.customLabel} onChange={e => setForm(f => ({ ...f, customLabel: e.target.value }))} />
+                  </div>
+                )}
+
+                {form.type !== 'free_delivery' && form.type !== 'bogo' && form.type !== 'buy_2_get_1' && form.type !== 'free_item' && form.type !== 'custom' && (
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">
                       {form.type === 'percentage' ? 'Discount %' : 'Flat Amount (₹)'}
@@ -309,6 +334,16 @@ const OffersManagement: React.FC = () => {
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Min. Order (₹)</label>
                   <input type="number" min="0" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none" value={form.minOrder} onChange={e => setForm(f => ({ ...f, minOrder: Number(e.target.value) }))} />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Restaurant</label>
+                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-orange-400 focus:outline-none" value={form.restaurantId} onChange={e => setForm(f => ({ ...f, restaurantId: e.target.value }))}>
+                    <option value="">All Restaurants (Global)</option>
+                    {restaurants.map(r => (
+                      <option key={r._id} value={r._id}>{r.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {form.type === 'percentage' && (

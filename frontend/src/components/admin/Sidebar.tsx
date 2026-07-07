@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminSession } from './AdminSessionContext';
-import { FaTachometerAlt, FaUsers, FaStore, FaClipboardList, FaSignOutAlt, FaChartBar, FaTruck, FaClipboardCheck, FaGift, FaHeadset, FaBell, FaMapMarkerAlt, FaTag, FaRupeeSign, FaMoneyBillWave, FaImage, FaUndo, FaCog, FaHandshake } from 'react-icons/fa';
+import { FaTachometerAlt, FaUsers, FaStore, FaClipboardList, FaSignOutAlt, FaChartBar, FaTruck, FaClipboardCheck, FaGift, FaHeadset, FaBell, FaMapMarkerAlt, FaTag, FaRupeeSign, FaMoneyBillWave, FaImage, FaUndo, FaCog, FaHandshake, FaChartLine, FaHistory } from 'react-icons/fa';
 
 const links = [
   { to: '/admin', label: 'Dashboard', icon: <FaTachometerAlt />, permission: 'read' },
+  { to: '/admin/dummy-dashboard', label: 'Marketing Dashboard', icon: <FaChartLine />, permission: 'read' },
   { to: '/admin/analytics', label: 'Analytics', icon: <FaChartBar />, permission: 'view_analytics' },
   { to: '/admin/daily-order', label: 'Daily Order', icon: <FaClipboardList />, permission: 'manage_orders' },
   { to: '/admin/offers', label: 'Offers & Banners', icon: <FaTag />, permission: 'write' },
@@ -82,14 +83,24 @@ const Sidebar: React.FC = () => {
               </Link>
             ))}
             {isLoggedIn && adminRole === 'super_admin' && (
-              <Link
-                to="/admin/sub-admins"
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all text-base ${location.pathname === '/admin/sub-admins' ? 'bg-orange-100 border-l-4 border-orange-500 text-orange-800 shadow' : 'text-gray-700 hover:bg-orange-50'}`}
-                onClick={() => setOpen(false)}
-              >
-                <span className="text-xl"><FaUsers /></span>
-                Sub-Admins
-              </Link>
+              <>
+                <Link
+                  to="/admin/sub-admins"
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all text-base ${location.pathname === '/admin/sub-admins' ? 'bg-orange-100 border-l-4 border-orange-500 text-orange-800 shadow' : 'text-gray-700 hover:bg-orange-50'}`}
+                  onClick={() => setOpen(false)}
+                >
+                  <span className="text-xl"><FaUsers /></span>
+                  Sub-Admins
+                </Link>
+                <Link
+                  to="/admin/audit-logs"
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all text-base ${location.pathname === '/admin/audit-logs' ? 'bg-orange-100 border-l-4 border-orange-500 text-orange-800 shadow' : 'text-gray-700 hover:bg-orange-50'}`}
+                  onClick={() => setOpen(false)}
+                >
+                  <span className="text-xl"><FaHistory /></span>
+                  Audit Logs
+                </Link>
+              </>
             )}
           </nav>
           {isLoggedIn && (

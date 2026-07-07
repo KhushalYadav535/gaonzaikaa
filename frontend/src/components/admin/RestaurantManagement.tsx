@@ -4,7 +4,7 @@ import { useAdminSession } from './AdminSessionContext';
 import {
   FaUtensils, FaMapMarkerAlt, FaLeaf, FaToggleOn, FaKey, FaSearch,
   FaPlus, FaEdit, FaTrash, FaTimes, FaCheck, FaImage, FaCamera,
-  FaStore, FaClock, FaTag, FaStar, FaToggleOff
+  FaStore, FaClock, FaTag, FaStar, FaToggleOff, FaGift
 } from 'react-icons/fa';
 import { adminAPI } from '../../services/api';
 
@@ -49,6 +49,12 @@ const defaultMenuForm = (): MenuItem => ({
   preparationTime: 15, isAvailable: true
 });
 
+const defaultOfferForm = {
+  title: '', description: '', type: 'percentage',
+  value: 20, minOrder: 0, backgroundColor: '#FF5722',
+  validFrom: '', validTo: '', isActive: true, displayOrder: 0,
+};
+
 const RestaurantManagement: React.FC = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +67,15 @@ const RestaurantManagement: React.FC = () => {
   const isAdmin = isLoggedIn && ['super_admin', 'admin', 'restaurant_manager', 'delivery_manager'].includes(adminRole || '');
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' } | null>(null);
   const showToast = (message: string, type: 'success' | 'error' = 'success') => setToast({ message, type });
+
+  // ─── Offers Modal State ──────────────────────────────────────
+  const [showOffersModal, setShowOffersModal] = useState(false);
+  const [restaurantOffers, setRestaurantOffers] = useState<any[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
+  const [showOfferForm, setShowOfferForm] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<any | null>(null);
+  const [offerForm, setOfferForm] = useState(defaultOfferForm);
+  const [savingOffer, setSavingOffer] = useState(false);
 
   // ─── Menu Modal State ────────────────────────────────────────
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
@@ -81,6 +96,11 @@ const RestaurantManagement: React.FC = () => {
   const [uploadingRestImage, setUploadingRestImage] = useState<string | null>(null);
   const restImageRef = useRef<HTMLInputElement>(null);
   const [activeRestImageId, setActiveRestImageId] = useState<string | null>(null);
+
+  // ─── Edit Restaurant State ─────────────────────────────────────
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', address: '', cuisine: '', lat: '', lng: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // ─── OTP Tools State ─────────────────────────────────────────
   const [showOTP, setShowOTP] = useState(false);
@@ -182,6 +202,43 @@ const RestaurantManagement: React.FC = () => {
     } catch { showToast('Delete failed', 'error'); }
   };
 
+  // ─── Edit Restaurant ──────────────────────────────────────────
+  const openEditRestaurant = (restaurant: Restaurant) => {
+    setSelectedRestaurant(restaurant);
+    setEditForm({
+      name: restaurant.name || '',
+      address: typeof restaurant.address === 'string' ? restaurant.address : restaurant.address?.fullAddress || '',
+      cuisine: restaurant.cuisine || '',
+      lat: restaurant.location?.coordinates?.[1]?.toString() || '',
+      lng: restaurant.location?.coordinates?.[0]?.toString() || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedRestaurant) return;
+    setSavingEdit(true);
+    try {
+      const payload = {
+        ...editForm,
+        location: {
+          type: 'Point',
+          coordinates: [Number(editForm.lng) || 0, Number(editForm.lat) || 0]
+        }
+      };
+      const res = await adminAPI.updateRestaurant(selectedRestaurant._id, payload);
+      if (res.data.success) {
+        setRestaurants(rs => rs.map(r => r._id === selectedRestaurant._id ? { ...r, ...editForm, location: payload.location } : r));
+        showToast('Restaurant details updated ✅');
+        setShowEditModal(false);
+      }
+    } catch {
+      showToast('Update failed', 'error');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   // ─── Filter Logic ─────────────────────────────────────────────
   const filterRestaurants = (list: Restaurant[]) => {
     return list.filter(r => {
@@ -229,6 +286,71 @@ const RestaurantManagement: React.FC = () => {
       }
     } catch { showToast('Image upload failed', 'error'); }
     finally { setUploadingRestImage(null); }
+  };
+
+  // ─── Open Offers Modal ────────────────────────────────────────
+  const openOffersModal = async (restaurant: Restaurant) => {
+    setSelectedRestaurant(restaurant);
+    setShowOffersModal(true);
+    setOffersLoading(true);
+    setShowOfferForm(false);
+    setEditingOffer(null);
+    try {
+      const res = await adminAPI.getOffers();
+      if (res.data.success) {
+        setRestaurantOffers(res.data.data.filter((o: any) => o.restaurantId?._id === restaurant._id));
+      }
+    } catch { showToast('Offers load karne mein error', 'error'); }
+    finally { setOffersLoading(false); }
+  };
+
+  const openAddOffer = () => {
+    setEditingOffer(null);
+    const today = new Date().toISOString().split('T')[0];
+    const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    setOfferForm({ ...defaultOfferForm, validFrom: today, validTo: nextMonth });
+    setShowOfferForm(true);
+  };
+
+  const openEditOffer = (offer: any) => {
+    setEditingOffer(offer);
+    setOfferForm({
+      title: offer.title, description: offer.description, type: offer.type,
+      value: offer.value, minOrder: offer.minOrder, backgroundColor: offer.backgroundColor,
+      validFrom: offer.validFrom?.split('T')[0] || '', validTo: offer.validTo?.split('T')[0] || '',
+      isActive: offer.isActive, displayOrder: offer.displayOrder
+    });
+    setShowOfferForm(true);
+  };
+
+  const handleSaveOffer = async () => {
+    if (!selectedRestaurant || !offerForm.title || !offerForm.validFrom || !offerForm.validTo) {
+      showToast('Title aur dates required hain', 'error'); return;
+    }
+    setSavingOffer(true);
+    try {
+      const payload = { ...offerForm, restaurantId: selectedRestaurant._id };
+      if (editingOffer) {
+        await adminAPI.updateOffer(editingOffer._id, payload);
+        showToast('Offer updated ✅');
+      } else {
+        await adminAPI.createOffer(payload);
+        showToast('Offer created ✅');
+      }
+      setShowOfferForm(false);
+      openOffersModal(selectedRestaurant); // refresh
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Save failed', 'error');
+    } finally { setSavingOffer(false); }
+  };
+
+  const handleDeleteOffer = async (id: string) => {
+    if (!window.confirm('Delete this offer?')) return;
+    try {
+      await adminAPI.deleteOffer(id);
+      setRestaurantOffers(offers => offers.filter(o => o._id !== id));
+      showToast('Offer deleted');
+    } catch { showToast('Delete failed', 'error'); }
   };
 
   // ─── Open Menu Modal ──────────────────────────────────────────
@@ -609,15 +731,30 @@ const RestaurantManagement: React.FC = () => {
                       {restaurant.cuisine}
                     </span>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-2 mt-auto">
-                      {/* Menu Management */}
-                      <button
-                        onClick={() => openMenuModal(restaurant)}
-                        className="flex-1 flex items-center justify-center gap-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-xl text-sm font-semibold transition active:scale-95"
-                      >
-                        <FaUtensils /> Menu Manage
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2 mt-auto">
+                        {/* Edit Restaurant Details */}
+                        <button
+                          onClick={() => openEditRestaurant(restaurant)}
+                          className="flex-1 flex items-center justify-center gap-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-xl text-sm font-semibold transition active:scale-95"
+                        >
+                          <FaEdit /> Edit
+                        </button>
+                        {/* Menu Management */}
+                        <button
+                          onClick={() => openMenuModal(restaurant)}
+                          className="flex-1 flex items-center justify-center gap-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-xl text-sm font-semibold transition active:scale-95"
+                        >
+                          <FaUtensils /> Menu
+                        </button>
+                        
+                        {/* Offers Management */}
+                        <button
+                          onClick={() => openOffersModal(restaurant)}
+                          className="flex-1 flex items-center justify-center gap-1 bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded-xl text-sm font-semibold transition active:scale-95"
+                        >
+                          <FaGift /> Offers
+                        </button>
 
                       {/* Restaurant Active Toggle */}
                       <button
@@ -675,6 +812,72 @@ const RestaurantManagement: React.FC = () => {
         </>
       )}
 
+
+      {/* ═══════════════════════════════════════════════════════════════
+           EDIT RESTAURANT MODAL
+      ════════════════════════════════════════════════════════════════ */}
+      {showEditModal && selectedRestaurant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-50 items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b">
+              <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2"><FaStore className="text-orange-500"/> Edit Restaurant</h3>
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                  value={editForm.name}
+                  onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cuisine</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                  value={editForm.cuisine}
+                  onChange={e => setEditForm({ ...editForm, cuisine: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Latitude</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                    placeholder="e.g. 28.6139"
+                    value={editForm.lat}
+                    onChange={e => setEditForm({ ...editForm, lat: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Longitude</label>
+                  <input
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
+                    placeholder="e.g. 77.2090"
+                    value={editForm.lng}
+                    onChange={e => setEditForm({ ...editForm, lng: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                <textarea
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none resize-none h-24"
+                  value={editForm.address}
+                  onChange={e => setEditForm({ ...editForm, address: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 border-t flex gap-2">
+              <button onClick={() => setShowEditModal(false)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-xl text-sm font-semibold transition">Cancel</button>
+              <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50">
+                {savingEdit ? 'Saving...' : 'Save Details'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════
            MENU MANAGEMENT MODAL
@@ -917,6 +1120,150 @@ const RestaurantManagement: React.FC = () => {
                         <button onClick={() => handleDeleteItem(item)}
                           className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition" title="Delete">
                           <FaTrash className="text-xs" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+           OFFERS MANAGEMENT MODAL
+      ════════════════════════════════════════════════════════════════ */}
+      {showOffersModal && selectedRestaurant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-50 p-0 md:p-4 items-stretch md:items-center justify-center">
+          <div className="bg-white w-full md:max-w-3xl md:rounded-2xl shadow-2xl flex flex-col max-h-screen overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 px-5 py-4 border-b bg-white sticky top-0 z-10">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
+                <FaGift className="text-purple-500 text-xl" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-800 truncate">{selectedRestaurant.name} - Offers</h3>
+                <p className="text-xs text-gray-400">{restaurantOffers.length} active offers</p>
+              </div>
+              <button
+                onClick={openAddOffer}
+                className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-semibold"
+              >
+                <FaPlus /> Add Offer
+              </button>
+              <button onClick={() => { setShowOffersModal(false); setShowOfferForm(false); }}
+                className="text-gray-400 hover:text-gray-600 text-xl ml-1">
+                <FaTimes />
+              </button>
+            </div>
+
+            {/* Add/Edit Offer Form — slides in */}
+            {showOfferForm && (
+              <div className="border-b bg-purple-50 px-5 py-4 overflow-y-auto max-h-[60vh]">
+                <div className="flex items-center gap-2 mb-4">
+                  <h4 className="font-bold text-purple-700">{editingOffer ? '✏️ Edit Offer' : '➕ New Offer'}</h4>
+                  <button onClick={() => { setShowOfferForm(false); setEditingOffer(null); }}
+                    className="ml-auto text-gray-400 hover:text-gray-600"><FaTimes /></button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Offer Title *</label>
+                    <input className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400"
+                      value={offerForm.title} onChange={e => setOfferForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. 20% OFF" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
+                    <input className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400"
+                      value={offerForm.description} onChange={e => setOfferForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. On orders above ₹200" />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Offer Type</label>
+                    <select className="w-full border rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-purple-400"
+                      value={offerForm.type} onChange={e => setOfferForm(f => ({ ...f, type: e.target.value }))}>
+                      <option value="percentage">% Discount</option>
+                      <option value="flat">Flat ₹ Off</option>
+                      <option value="free_delivery">Free Delivery</option>
+                      <option value="bogo">Buy 1 Get 1</option>
+                      <option value="buy_2_get_1">Buy 2 Get 1</option>
+                      <option value="free_item">Free Item</option>
+                    </select>
+                  </div>
+                  
+                  {offerForm.type !== 'free_delivery' && offerForm.type !== 'bogo' && offerForm.type !== 'buy_2_get_1' && offerForm.type !== 'free_item' && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Value (₹ or %)</label>
+                      <input type="number" min="0" className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400"
+                        value={offerForm.value} onChange={e => setOfferForm(f => ({ ...f, value: Number(e.target.value) }))} />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Min Order (₹)</label>
+                    <input type="number" min="0" className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400"
+                      value={offerForm.minOrder} onChange={e => setOfferForm(f => ({ ...f, minOrder: Number(e.target.value) }))} />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Banner Color</label>
+                    <input type="color" className="w-full h-9 rounded-xl border cursor-pointer"
+                      value={offerForm.backgroundColor} onChange={e => setOfferForm(f => ({ ...f, backgroundColor: e.target.value }))} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Valid From</label>
+                    <input type="date" className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400"
+                      value={offerForm.validFrom} onChange={e => setOfferForm(f => ({ ...f, validFrom: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Valid To</label>
+                    <input type="date" className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-400"
+                      value={offerForm.validTo} onChange={e => setOfferForm(f => ({ ...f, validTo: e.target.value }))} />
+                  </div>
+
+                </div>
+
+                <button
+                  onClick={handleSaveOffer}
+                  disabled={savingOffer}
+                  className="mt-4 w-full bg-purple-500 hover:bg-purple-600 text-white py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition active:scale-95"
+                >
+                  {savingOffer ? 'Saving...' : 'Save Offer'}
+                </button>
+              </div>
+            )}
+
+            {/* Offers List */}
+            <div className="overflow-y-auto flex-1 px-4 py-3 bg-gray-50">
+              {offersLoading ? (
+                <div className="text-center py-10 text-gray-400">Loading offers...</div>
+              ) : restaurantOffers.length === 0 ? (
+                <div className="text-center py-12">
+                  <FaGift className="text-5xl text-gray-200 mx-auto mb-3" />
+                  <p className="text-gray-400">No active offers for this restaurant</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {restaurantOffers.map((offer: any) => (
+                    <div key={offer._id} className="bg-white rounded-xl shadow-sm border p-4 flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-gray-800">{offer.title}</h4>
+                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                            {offer.type.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">{offer.description}</p>
+                        <p className="text-xs text-gray-400 mt-1">Valid till: {new Date(offer.validTo).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button onClick={() => openEditOffer(offer)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100">
+                          <FaEdit />
+                        </button>
+                        <button onClick={() => handleDeleteOffer(offer._id)} className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100">
+                          <FaTrash />
                         </button>
                       </div>
                     </div>

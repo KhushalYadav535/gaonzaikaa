@@ -77,6 +77,8 @@ export const adminAPI = {
     api.put(`/admin/orders/${id}`, data),
   deleteOrder: (id: string) =>
     api.delete(`/admin/orders/${id}`),
+  assignDelivery: (orderId: string, deliveryPersonId: string) =>
+    api.post(`/admin/orders/${orderId}/assign-delivery`, { deliveryPersonId }),
 
   // Users
   getUsers: (params?: { role?: string; limit?: number; page?: number }) =>
@@ -143,6 +145,7 @@ export const adminAPI = {
   createVendor: (data: {
     name: string; email: string; phone: string; password: string;
     restaurantName: string; restaurantAddress?: string; cuisine?: string;
+    lat?: number | string; lng?: number | string;
   }) => api.post('/admin/create-vendor', data),
 
   // Create Delivery Boy (admin only)
@@ -248,12 +251,21 @@ export const adminAPI = {
   },
   markPayoutPaid: (payoutId: string, transactionRef: string, notes?: string) => 
     api.post('/admin/payouts/mark-paid', { payoutId, transactionRef, notes }),
+    
+  // New Order-level Settlement APIs
+  getVendorSettlementOrders: (vendorId: string) => 
+    api.get(`/admin/vendor-orders/${vendorId}`),
+  settleVendorOrders: (orderIds: string[]) => 
+    api.post('/admin/vendor-orders/settle', { orderIds }),
 
   // ─── SUB-ADMINS ────────────────────────────────────────────────
   getSubAdmins: () => api.get('/admin/admins'),
   createSubAdmin: (data: any) => api.post('/admin/admins', data),
   updateSubAdmin: (id: string, data: any) => api.put(`/admin/admins/${id}`, data),
   deleteSubAdmin: (id: string) => api.delete(`/admin/admins/${id}`),
+
+  // ─── AUDIT LOGS ────────────────────────────────────────────────
+  getAuditLogs: () => api.get('/admin/audit-logs'),
 
   // ─── AFFILIATES ────────────────────────────────────────────────
   getAffiliates: () => api.get('/admin/affiliates'),

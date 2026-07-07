@@ -30,6 +30,7 @@ const OrderManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' } | null>(null);
+  const [deliveryStaff, setDeliveryStaff] = useState<{ _id: string; name: string; phone: string }[]>([]);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -67,7 +68,19 @@ const OrderManagement: React.FC = () => {
       }
     };
 
+    const fetchDeliveryStaff = async () => {
+      try {
+        const response = await adminAPI.getUsers({ role: 'delivery', limit: 100 });
+        if (response.data.success) {
+          setDeliveryStaff(response.data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to load delivery staff', err);
+      }
+    };
+
     fetchOrders();
+    fetchDeliveryStaff();
   }, []);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -89,9 +102,19 @@ const OrderManagement: React.FC = () => {
     }
   };
 
-  const handleAssignStaff = (orderId: string, staffId: string) => {
-    // Note: This would need to be implemented in the backend
-    showToast('Staff assignment functionality not implemented yet.', 'error');
+  const handleAssignStaff = async (orderId: string, staffId: string) => {
+    if (!staffId) return;
+    try {
+      const response = await adminAPI.assignDelivery(orderId, staffId);
+      if (response.data.success) {
+        setOrders(orders => orders.map(order => order._id === orderId ? response.data.data : order));
+        showToast('Delivery person assigned successfully!');
+      } else {
+        showToast(response.data.message || 'Failed to assign delivery person.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to assign delivery person.', 'error');
+    }
   };
 
   const handleStatusUpdate = (orderId: string, nextStatus: string) => {
@@ -137,8 +160,6 @@ const OrderManagement: React.FC = () => {
     }
   };
 
-  // deliveryStaff would be fetched from backend in a real app
-  const deliveryStaff: { id: number; name: string }[] = [];
   const statusSteps = [
     { key: 'placed', label: 'Placed', icon: <FaClock /> },
     { key: 'accepted', label: 'Accepted', icon: <FaCheckCircle /> },
@@ -188,26 +209,33 @@ const OrderManagement: React.FC = () => {
                 <td className="py-2 px-4 border-b group transition hover:bg-orange-100">{order.restaurant?.name || 'N/A'}</td>
                 <td className="py-2 px-4 border-b group transition hover:bg-orange-100">
                   <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                    order.status === 'placed' ? 'bg-yellow-100 text-yellow-700' : 
-                    order.status === 'accepted' ? 'bg-blue-100 text-blue-700' : 
-                    order.status === 'preparing' ? 'bg-orange-100 text-orange-700' : 
-                    order.status === 'out_for_delivery' ? 'bg-purple-100 text-purple-700' : 
-                    order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' : 
-                    order.status === 'cancelled' ? 'bg-red-100 text-red-700' : 
+                    order.status.toLowerCase() === 'placed' ? 'bg-yellow-100 text-yellow-700' : 
+                    order.status.toLowerCase() === 'accepted' ? 'bg-blue-100 text-blue-700' : 
+                    order.status.toLowerCase() === 'preparing' ? 'bg-orange-100 text-orange-700' : 
+                    order.status.toLowerCase() === 'out_for_delivery' ? 'bg-purple-100 text-purple-700' : 
+                    order.status.toLowerCase() === 'delivered' ? 'bg-emerald-100 text-emerald-700' : 
+                    order.status.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700' : 
                     'bg-gray-100 text-gray-700'
                   }`}>{order.status.replace('_', ' ')}</span>
                   <div className="mt-2 flex items-center gap-2">
                     <FaTruck className="text-orange-400" />
-                    <span className="text-xs text-gray-600">
-                      {order.deliveryPerson?.name || 'Unassigned'}
-                    </span>
+                    <select
+                      className="border p-1 rounded text-xs focus:ring-1 focus:ring-orange-400 max-w-[150px]"
+                      value={order.deliveryPersonId || ''}
+                      onChange={(e) => handleAssignStaff(order._id, e.target.value)}
+                    >
+                      <option value="">-- Assign Delivery --</option>
+                      {deliveryStaff.map(staff => (
+                        <option key={staff._id} value={staff._id}>{staff.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </td>
                 <td className="py-2 px-4 border-b flex flex-wrap gap-2 group transition hover:bg-orange-100">
                   <button className="bg-indigo-500 text-white px-2 py-1 rounded transition hover:bg-indigo-600 active:scale-95" onClick={() => openDetails(order)}>Details</button>
                   <select
                     className="border p-1 rounded mr-2"
-                    value={order.status}
+                    value={order.status.toLowerCase()}
                     onChange={e => handleStatusChange(order._id, e.target.value)}
                   >
                     <option value="placed">Placed</option>

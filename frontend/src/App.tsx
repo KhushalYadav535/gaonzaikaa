@@ -34,6 +34,8 @@ import OffersManagement from './components/admin/OffersManagement';
 import SubAdminManagement from './components/admin/SubAdminManagement';
 import SystemSettings from './components/admin/SystemSettings';
 import AffiliateManagement from './components/admin/AffiliateManagement';
+import DummyDashboard from './components/admin/DummyDashboard';
+import AuditLogs from './components/admin/AuditLogs';
 import { AdminSessionProvider, useAdminSession } from './components/admin/AdminSessionContext';
 
 const AdminUsers = UserManagement;
@@ -84,6 +86,7 @@ function App() {
           {/* Admin Panel Nested Routes */}
           <Route path="/admin" element={<div className="admin-bg"><ProtectedAdminLayout /></div>}>
             <Route index element={<Dashboard />} />
+            <Route path="dummy-dashboard" element={<DummyDashboard />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="daily-order" element={<DailyOrder />} />
             <Route path="delivery-staff" element={<DeliveryStaffManagement />} />
@@ -98,6 +101,7 @@ function App() {
             <Route path="villages" element={<VillageManagement />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="sub-admins" element={<SubAdminManagement />} />
+            <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="settings" element={<SystemSettings />} />
             <Route path="restaurants" element={<AdminRestaurants />} />
             <Route path="orders" element={<AdminOrders />} />

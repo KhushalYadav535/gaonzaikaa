@@ -15,7 +15,7 @@ interface User {
 
 // ── Create Vendor Modal ────────────────────────────────────────────────────────
 const CreateVendorModal: React.FC<{ isOpen: boolean; onClose: () => void; onSuccess: () => void }> = ({ isOpen, onClose, onSuccess }) => {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', restaurantName: '', restaurantAddress: '', cuisine: 'Mixed' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', restaurantName: '', restaurantAddress: '', cuisine: 'Mixed', lat: '', lng: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,7 +30,7 @@ const CreateVendorModal: React.FC<{ isOpen: boolean; onClose: () => void; onSucc
       if (res.data.success) {
         onSuccess();
         onClose();
-        setForm({ name: '', email: '', phone: '', password: '', restaurantName: '', restaurantAddress: '', cuisine: 'Mixed' });
+        setForm({ name: '', email: '', phone: '', password: '', restaurantName: '', restaurantAddress: '', cuisine: 'Mixed', lat: '', lng: '' });
       } else {
         setError(res.data.message || 'Failed to create vendor');
       }
@@ -91,6 +91,16 @@ const CreateVendorModal: React.FC<{ isOpen: boolean; onClose: () => void; onSucc
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
                   <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none" placeholder="Full address" value={form.restaurantAddress} onChange={e => setForm(f => ({ ...f, restaurantAddress: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Latitude</label>
+                  <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none" placeholder="e.g. 28.6139" value={form.lat} onChange={e => setForm(f => ({ ...f, lat: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Longitude</label>
+                  <input className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none" placeholder="e.g. 77.2090" value={form.lng} onChange={e => setForm(f => ({ ...f, lng: e.target.value }))} />
                 </div>
               </div>
             </div>

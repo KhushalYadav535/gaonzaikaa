@@ -7,7 +7,7 @@ interface Coupon {
   _id: string;
   code: string;
   description: string;
-  type: 'percentage' | 'flat' | 'free_delivery';
+  type: 'percentage' | 'flat' | 'free_delivery' | 'free_item';
   discount: number;
   maxDiscount?: number;
   minOrder: number;
@@ -16,16 +16,25 @@ interface Coupon {
   validFrom: string;
   validTo: string;
   isActive: boolean;
+  applicableRestaurants?: string[];
+  customLabel?: string;
+  isAffiliate?: boolean;
+  affiliateId?: string;
+  commissionAmount?: number;
 }
 
 const defaultForm = {
   code: '', description: '', type: 'percentage' as const,
-  discount: 10, minOrder: 0, maxDiscount: undefined as number | undefined,
-  usageLimit: 100, validFrom: '', validTo: '', isActive: true
+  discount: 10, maxDiscount: undefined as number | undefined,
+  minOrder: 0, usageLimit: 100, customLabel: '',
+  validFrom: '', validTo: '', isActive: true,
+  isAffiliate: false, affiliateId: '', commissionAmount: 0,
+  applicableRestaurants: [] as string[]
 };
 
 const CouponManagement: React.FC = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [restaurants, setRestaurants] = useState<{_id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(defaultForm);
   const [editing, setEditing] = useState<Coupon | null>(null);
@@ -35,19 +44,23 @@ const CouponManagement: React.FC = () => {
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => setToast({ message, type });
 
-  const fetchCoupons = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await adminAPI.getCoupons();
+      const [res, restRes] = await Promise.all([
+        adminAPI.getCoupons(),
+        adminAPI.getRestaurants()
+      ]);
       if (res.data.success) setCoupons(res.data.data);
+      if (restRes.data.success) setRestaurants(restRes.data.data);
     } catch {
-      showToast('Failed to load coupons', 'error');
+      showToast('Failed to load data', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchCoupons(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -61,9 +74,15 @@ const CouponManagement: React.FC = () => {
     setEditing(c);
     setForm({
       code: c.code, description: c.description || '', type: c.type,
-      discount: c.discount, minOrder: c.minOrder, maxDiscount: c.maxDiscount,
-      usageLimit: c.usageLimit, validFrom: c.validFrom?.split('T')[0] || '',
-      validTo: c.validTo?.split('T')[0] || '', isActive: c.isActive
+      discount: c.discount,
+      maxDiscount: c.maxDiscount,
+      minOrder: c.minOrder,
+      usageLimit: c.usageLimit,
+      customLabel: c.customLabel || '',
+      validFrom: c.validFrom?.split('T')[0] || '',
+      validTo: c.validTo?.split('T')[0] || '', isActive: c.isActive,
+      isAffiliate: !!c.isAffiliate, affiliateId: c.affiliateId || '', commissionAmount: c.commissionAmount || 0,
+      applicableRestaurants: c.applicableRestaurants || []
     });
     setShowModal(true);
   };
@@ -79,7 +98,7 @@ const CouponManagement: React.FC = () => {
         await adminAPI.createCoupon(form);
         showToast('Coupon created 🎉');
       }
-      fetchCoupons();
+      fetchData();
       setShowModal(false);
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Failed to save coupon', 'error');
@@ -162,8 +181,8 @@ const CouponManagement: React.FC = () => {
                   <tr key={c._id} className={`border-b transition hover:bg-orange-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                     <td className="py-3 px-4 font-mono font-bold text-indigo-700 text-sm">{c.code}</td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${c.type === 'percentage' ? 'bg-orange-100 text-orange-700' : c.type === 'flat' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                        {c.type === 'percentage' ? '% Off' : c.type === 'flat' ? 'Flat ₹' : 'Free Delivery'}
+                      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                        {c.type === 'percentage' ? '% Off' : c.type === 'flat' ? 'Flat ₹' : c.type === 'free_delivery' ? 'Free Delivery' : c.type === 'bogo' ? 'Buy 1 Get 1' : c.type === 'buy_2_get_1' ? 'Buy 2 Get 1' : c.type === 'custom' ? (c.customLabel || 'Custom') : 'Free Item'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-sm font-semibold">{c.type === 'percentage' ? `${c.discount}%` : c.type === 'flat' ? `₹${c.discount}` : '—'}</td>
@@ -228,9 +247,19 @@ const CouponManagement: React.FC = () => {
                     <option value="percentage">% Discount</option>
                     <option value="flat">Flat ₹ Off</option>
                     <option value="free_delivery">Free Delivery</option>
+                    <option value="bogo">Buy 1 Get 1</option>
+                    <option value="buy_2_get_1">Buy 2 Get 1</option>
+                    <option value="free_item">Free Item</option>
+                    <option value="custom">Custom Label</option>
                   </select>
                 </div>
-                {form.type !== 'free_delivery' && (
+                {form.type === 'custom' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Custom Badge Text (max 10 chars)</label>
+                    <input maxLength={10} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none" value={form.customLabel} onChange={e => setForm(f => ({ ...f, customLabel: e.target.value }))} placeholder="e.g. BUY 5 GET 2" />
+                  </div>
+                )}
+                {form.type !== 'free_delivery' && form.type !== 'bogo' && form.type !== 'buy_2_get_1' && form.type !== 'free_item' && form.type !== 'custom' && (
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Discount {form.type === 'percentage' ? '%' : '₹'} *</label>
                     <input required type="number" min="0" className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none" value={form.discount} onChange={e => setForm(f => ({ ...f, discount: Number(e.target.value) }))} />
@@ -243,6 +272,17 @@ const CouponManagement: React.FC = () => {
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Usage Limit</label>
                   <input type="number" min="1" className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none" value={form.usageLimit} onChange={e => setForm(f => ({ ...f, usageLimit: Number(e.target.value) }))} />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Applicable Restaurants (Leave empty for All)</label>
+                  <select multiple className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-orange-400 focus:outline-none h-24" value={form.applicableRestaurants} onChange={e => {
+                    const values = Array.from(e.target.selectedOptions, option => option.value);
+                    setForm(f => ({ ...f, applicableRestaurants: values }));
+                  }}>
+                    {restaurants.map(r => (
+                      <option key={r._id} value={r._id}>{r.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Valid From *</label>
