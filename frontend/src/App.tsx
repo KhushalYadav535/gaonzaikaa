@@ -36,6 +36,7 @@ import SystemSettings from './components/admin/SystemSettings';
 import AffiliateManagement from './components/admin/AffiliateManagement';
 import DummyDashboard from './components/admin/DummyDashboard';
 import AuditLogs from './components/admin/AuditLogs';
+import CustomerManagement from './components/admin/CustomerManagement';
 import { AdminSessionProvider, useAdminSession } from './components/admin/AdminSessionContext';
 
 const AdminUsers = UserManagement;
@@ -102,6 +103,7 @@ function App() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="sub-admins" element={<SubAdminManagement />} />
             <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="customers" element={<CustomerManagement />} />
             <Route path="settings" element={<SystemSettings />} />
             <Route path="restaurants" element={<AdminRestaurants />} />
             <Route path="orders" element={<AdminOrders />} />

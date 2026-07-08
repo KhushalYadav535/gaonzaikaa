@@ -70,6 +70,10 @@ export const adminAPI = {
   deleteRestaurant: (id: string) =>
     api.delete(`/admin/restaurants/${id}`),
 
+  // Customers
+  getCustomers: () => api.get('/admin/customers'),
+  toggleCustomerStatus: (id: string) => api.put(`/admin/customers/${id}/toggle-status`),
+
   // Orders
   getOrders: (params?: { status?: string; limit?: number; page?: number; restaurantId?: string }) =>
     api.get('/admin/orders', { params }),

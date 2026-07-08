@@ -21,6 +21,7 @@ const links = [
   { to: '/admin/notifications', label: 'Notifications', icon: <FaBell />, permission: 'write' },
   { to: '/admin/villages', label: 'Villages', icon: <FaMapMarkerAlt />, permission: 'write' },
   { to: '/admin/users', label: 'User Management', icon: <FaUsers />, permission: 'manage_users' },
+  { to: '/admin/customers', label: 'Customers', icon: <FaUsers />, permission: 'manage_users' },
   { to: '/admin/restaurants', label: 'Restaurants', icon: <FaStore />, permission: 'manage_restaurants' },
   { to: '/admin/orders', label: 'Order Management', icon: <FaClipboardList />, permission: 'manage_orders' },
   { to: '/admin/earnings', label: 'Earnings', icon: <FaRupeeSign />, permission: 'view_analytics' },
